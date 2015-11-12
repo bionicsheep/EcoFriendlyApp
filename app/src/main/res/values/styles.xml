@@ -19,9 +19,11 @@
     </style>
 
     <style name="AppTheme.CardTitle" parent="TextAppearance.AppCompat.Headline">
+        <item name="android:textColor">@color/black</item>
     </style>
 
     <style name="AppTheme.CardSubtitle" parent="TextAppearance.AppCompat.Caption">
+        <item name="android:textColor">@color/gray</item>
     </style>
 
 </resources>
