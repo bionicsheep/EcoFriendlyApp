@@ -11,6 +11,10 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme" >
 
+        <service
+            android:name=".TripMonitor" >
+        </service>
+
         <receiver android:name=".AutoStart" >
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
