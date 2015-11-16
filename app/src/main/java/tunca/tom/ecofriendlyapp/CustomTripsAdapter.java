@@ -9,9 +9,7 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
-/**
- * Created by aless_000 on 11/11/2015.
- */
+
 public class CustomTripsAdapter extends ArrayAdapter<Trip>{
     public CustomTripsAdapter(Context context, ArrayList<Trip> trips) {
         super(context, 0, trips);

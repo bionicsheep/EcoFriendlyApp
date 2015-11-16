@@ -4,9 +4,7 @@ import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
 
-/**
- * Created by aless_000 on 11/12/2015.
- */
+
 public class TripMonitor extends Service{
 
     @Override

@@ -9,9 +9,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
 
-/**
- * Created by aless_000 on 11/12/2015.
- */
+
 public class HistoryFragment extends Fragment {
 
     public HistoryFragment() {

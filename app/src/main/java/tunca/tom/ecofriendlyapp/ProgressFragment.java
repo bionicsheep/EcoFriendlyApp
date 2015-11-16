@@ -6,9 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-/**
- * Created by aless_000 on 11/12/2015.
- */
+
 public class ProgressFragment extends Fragment {
 
     public ProgressFragment() {

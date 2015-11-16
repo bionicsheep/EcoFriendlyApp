@@ -1,8 +1,6 @@
 package tunca.tom.ecofriendlyapp;
 
-/**
- * Created by aless_000 on 11/10/2015.
- */
+
 import java.util.ArrayList;
 
 public class Trip {
