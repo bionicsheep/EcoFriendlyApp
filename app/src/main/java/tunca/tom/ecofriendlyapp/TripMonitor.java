@@ -4,6 +4,7 @@ import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -13,6 +14,7 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.PowerManager;
+import android.preference.PreferenceManager;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
@@ -56,14 +58,23 @@ public class TripMonitor extends Service implements SensorEventListener, Locatio
     private static final int LOCATION_PRIORITY = LocationRequest.PRIORITY_HIGH_ACCURACY;
     private Location mStartLocation;
 
+    //preferences
+    private SharedPreferences mSharedPreferences;
+    private SharedPreferences.Editor mEditor;
+
     public void onCreate(){
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "TripMonitor");
         mWakeLock.acquire();
 
+        initializePreferences();
         buildGoogleApiClient();
         initializeLocation();
         initializeAccelorometer();
+    }
+
+    private void initializePreferences(){
+        mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
     }
 
     private void buildGoogleApiClient() {
@@ -111,8 +122,12 @@ public class TripMonitor extends Service implements SensorEventListener, Locatio
             // Make this higher or lower according to how much
             // motion you want to detect
             if(mAcceleration > 3 && !tracking){
-                Toast.makeText(getApplicationContext(), "gps tracking started",
-                        Toast.LENGTH_LONG).show();
+                boolean demoMode = mSharedPreferences.getBoolean("demo_mode", false);
+                Log.d("accel","starttracking");
+                if(demoMode) {
+                    Toast.makeText(getApplicationContext(), "gps tracking started",
+                            Toast.LENGTH_LONG).show();
+                }
                 startTracking();
             }
         }
@@ -154,14 +169,17 @@ public class TripMonitor extends Service implements SensorEventListener, Locatio
             }
         }
         if(numPositiveResults >= MIN_POS_RESULTS){
-            NotificationManager mNotifyMgr =
-                    (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-            NotificationCompat.Builder mBuilder =
-                    new NotificationCompat.Builder(this)
-                            .setSmallIcon(R.mipmap.ic_launcher)
-                            .setContentTitle("Trip started ")
-                            .setContentText(numPositiveResults + " successes");
-            mNotifyMgr.notify(001, mBuilder.build());
+            boolean demoMode = mSharedPreferences.getBoolean("demo_mode", false);
+            if(demoMode) {
+                NotificationManager mNotifyMgr =
+                        (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+                NotificationCompat.Builder mBuilder =
+                        new NotificationCompat.Builder(this)
+                                .setSmallIcon(R.mipmap.ic_launcher)
+                                .setContentTitle("Trip started ")
+                                .setContentText(numPositiveResults + " successes");
+                mNotifyMgr.notify(001, mBuilder.build());
+            }
             Log.d("Trip", "trip succeeded due to POS_RESULTS being " + numPositiveResults);
             stopTracking();
         }else{
@@ -184,12 +202,19 @@ public class TripMonitor extends Service implements SensorEventListener, Locatio
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        Log.d("service","service started");
         mGoogleApiClient.connect();
         return START_STICKY;
     }
 
     @Override
     public void onDestroy(){
+        mEditor = mSharedPreferences.edit();
+        mEditor.putBoolean("service_enabled",false);
+        mEditor.commit();
+
+        Log.d("service", "service destroyed");
+
         mSensorManager.unregisterListener(this);
         LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
         mGoogleApiClient.disconnect();
