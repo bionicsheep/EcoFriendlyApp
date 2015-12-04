@@ -1,6 +1,5 @@
 package tunca.tom.ecofriendlyapp;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -24,11 +23,6 @@ public class MainActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        //start service
-        Intent mIntent = new Intent(getApplicationContext(), TripMonitor.class);
-        getApplicationContext().startService(mIntent);
-
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -83,16 +77,19 @@ public class MainActivity extends AppCompatActivity
         } else if (id == R.id.nav_share) {
             //TODO
         } else if (id == R.id.nav_settings) {
-            goToSettings();
+            startSettingsFragment();
+            mTitle = "Settings";
+            getSupportActionBar().setTitle(mTitle);
         }
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
     }
 
-    public void goToSettings(){
-        Intent intent = new Intent(this, SettingsActivity.class);
-        startActivity(intent);
+    public void startSettingsFragment(){
+        SettingsFragment settingsFragment = new SettingsFragment();
+        FragmentManager mFragmentManager = getSupportFragmentManager();
+        mFragmentManager.beginTransaction().replace(R.id.content_frame, settingsFragment).commit();
     }
 
     public void startProgressFragment() {
@@ -106,4 +103,5 @@ public class MainActivity extends AppCompatActivity
         FragmentManager mFragmentManager = getSupportFragmentManager();
         mFragmentManager.beginTransaction().replace(R.id.content_frame, historyFragment).commit();
     }
+
 }

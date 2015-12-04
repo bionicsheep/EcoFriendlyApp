@@ -6,6 +6,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
+import android.content.SharedPreferences;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -15,6 +16,7 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.PowerManager;
+import android.preference.PreferenceManager;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
@@ -74,15 +76,24 @@ public class TripMonitor extends Service implements LocationListener,
     //date and time stuff
     private Calendar mCalendar;
 
+    //preferences
+    private SharedPreferences mSharedPreferences;
+    private SharedPreferences.Editor mEditor;
+
     public void onCreate(){
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "TripMonitor");
         mWakeLock.acquire();
 
+        initializePreferences();
         buildGoogleApiClient();
         initializeCalendar();
         initializeDatabase();
         initializeLocation();
+    }
+
+    private void initializePreferences(){
+        mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
     }
 
     private void buildGoogleApiClient() {
@@ -209,12 +220,19 @@ public class TripMonitor extends Service implements LocationListener,
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        Log.d("service","service started");
         mGoogleApiClient.connect();
         return START_STICKY;
     }
 
     @Override
     public void onDestroy(){
+        mEditor = mSharedPreferences.edit();
+        mEditor.putBoolean("service_enabled",false);
+        mEditor.commit();
+
+        Log.d("service", "service destroyed");
+
         LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
         mGoogleApiClient.disconnect();
         mWakeLock.release();
