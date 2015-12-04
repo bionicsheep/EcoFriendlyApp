@@ -87,7 +87,6 @@ public class TripMonitor extends Service implements LocationListener,
 
         initializePreferences();
         buildGoogleApiClient();
-        initializeCalendar();
         initializeDatabase();
         initializeLocation();
     }
@@ -102,10 +101,6 @@ public class TripMonitor extends Service implements LocationListener,
                 .addOnConnectionFailedListener(this)
                 .addApi(LocationServices.API)
                 .build();
-    }
-
-    private void initializeCalendar(){
-        mCalendar = Calendar.getInstance();
     }
 
     private void initializeDatabase(){
@@ -189,6 +184,7 @@ public class TripMonitor extends Service implements LocationListener,
     }
 
     private String getDate(){
+        mCalendar = Calendar.getInstance();
         String month = String.format("%02d",(mCalendar.get(Calendar.MONTH) + 1));
         String day = String.format("%02d",mCalendar.get(Calendar.DAY_OF_MONTH));
         String year = String.format("%02d",mCalendar.get(Calendar.YEAR));
@@ -199,6 +195,7 @@ public class TripMonitor extends Service implements LocationListener,
     }
 
     private String getTime(){
+        mCalendar = Calendar.getInstance();
         String hour = String.format("%02d",mCalendar.get(Calendar.HOUR));
         String minute = String.format("%02d",mCalendar.get(Calendar.MINUTE));
         String second = String.format("%02d",mCalendar.get(Calendar.SECOND));
