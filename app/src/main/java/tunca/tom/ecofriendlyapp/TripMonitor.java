@@ -2,8 +2,10 @@ package tunca.tom.ecofriendlyapp;
 
 import android.app.NotificationManager;
 import android.app.Service;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.database.sqlite.SQLiteDatabase;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -23,9 +25,12 @@ import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 
-public class TripMonitor extends Service implements SensorEventListener, LocationListener,
+public class TripMonitor extends Service implements LocationListener,
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener{
 
     //to keep service running when device off
@@ -45,16 +50,29 @@ public class TripMonitor extends Service implements SensorEventListener, Locatio
     private static final int MIN_POS_RESULTS = 2;
     private static final int MIN_DISTANCE_TRIGGER = 60;
     private static final int LOC_SAMPLE_SIZE = 5;
-    private ArrayList<Location> mLocations;
 
     //gps tracking
     private LocationManager mLocationManager;
     private GoogleApiClient mGoogleApiClient;
     private LocationRequest mLocationRequest;
-    private static final int LOCATION_INTERVAL = 10000;
-    private static final int FASTEST_LOCATION_INTERVAL = 5000;
+
+    private static final int SECOND = 1000;
+    private static final int MINUTE = SECOND * 60;
+    private static final int HOUR = MINUTE * 60;
+
+    private static final int LOCATION_INTERVAL_LOW = MINUTE * 10;
+    private static final int LOCATION_INTERVAL_MED = MINUTE * 5;
+    private static final int LOCATION_INTERVAL_HIGH = SECOND * 10;
+
     private static final int LOCATION_PRIORITY = LocationRequest.PRIORITY_HIGH_ACCURACY;
-    private Location mStartLocation;
+    private int updateUrgency = 0;
+
+    //data storage
+    private SQLiteDatabase mDatabase;
+    private LocationHistoryDatabase mDatabaseHelper;
+
+    //date and time stuff
+    private Calendar mCalendar;
 
     public void onCreate(){
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
@@ -62,8 +80,9 @@ public class TripMonitor extends Service implements SensorEventListener, Locatio
         mWakeLock.acquire();
 
         buildGoogleApiClient();
+        initializeCalendar();
+        initializeDatabase();
         initializeLocation();
-        initializeAccelorometer();
     }
 
     private void buildGoogleApiClient() {
@@ -74,48 +93,53 @@ public class TripMonitor extends Service implements SensorEventListener, Locatio
                 .build();
     }
 
+    private void initializeCalendar(){
+        mCalendar = Calendar.getInstance();
+    }
+
+    private void initializeDatabase(){
+        mDatabaseHelper = new LocationHistoryDatabase(getApplicationContext());
+        mDatabase = mDatabaseHelper.getWritableDatabase();
+    }
+
     private void initializeLocation(){
         mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         mLocationRequest = LocationRequest.create();
-        mLocationRequest.setInterval(LOCATION_INTERVAL);
-        mLocationRequest.setFastestInterval(FASTEST_LOCATION_INTERVAL);
+        mLocationRequest.setInterval(LOCATION_INTERVAL_HIGH); //test
+        mLocationRequest.setFastestInterval(LOCATION_INTERVAL_HIGH);
         mLocationRequest.setPriority(LOCATION_PRIORITY);
-
-        mLocations = new ArrayList<>();
     }
 
-    private void initializeAccelorometer(){
-        mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        mSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        mSensorManager.registerListener(this, mSensor, SensorManager.SENSOR_DELAY_UI);
+    private void updateRequestPriority(int urgency){
+        updateUrgency = urgency;
 
-        mAcceleration = 0.00f;
-        mAccelerationCurrent = mSensorManager.GRAVITY_EARTH;
-        mAccelerationLast = mSensorManager.GRAVITY_EARTH;
-    }
-
-    @Override
-    public void onSensorChanged(SensorEvent event) {
-        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER){
-            mGravity = event.values.clone();
-
-            float x = mGravity[0];
-            float y = mGravity[1];
-            float z = mGravity[2];
-
-            mAccelerationLast = mAccelerationCurrent;
-
-            mAccelerationCurrent = (float) Math.sqrt(x * x + y * y + z * z);
-            float delta = mAccelerationCurrent - mAccelerationLast;
-            mAcceleration = mAcceleration * 0.9f + delta;
-            // Make this higher or lower according to how much
-            // motion you want to detect
-            if(mAcceleration > 3 && !tracking){
-                Toast.makeText(getApplicationContext(), "gps tracking started",
-                        Toast.LENGTH_LONG).show();
-                startTracking();
-            }
+        switch (updateUrgency){
+            case 0:
+                mLocationRequest.setInterval(LOCATION_INTERVAL_LOW);
+                break;
+            case 1:
+                mLocationRequest.setInterval(LOCATION_INTERVAL_MED);
+                break;
+            case 2:
+                mLocationRequest.setInterval(LOCATION_INTERVAL_HIGH);
+                break;
         }
+    }
+
+    private void addEntry(String date, String time, double xPos, double yPos, float velocity){
+        ContentValues mValues = new ContentValues();
+
+        mValues.put(LocationHistoryDatabase.COL_1,date);
+        mValues.put(LocationHistoryDatabase.COL_2,time);
+        mValues.put(LocationHistoryDatabase.COL_3,xPos);
+        mValues.put(LocationHistoryDatabase.COL_4,yPos);
+        mValues.put(LocationHistoryDatabase.COL_5,velocity);
+
+        mDatabase.insert(
+                LocationHistoryDatabase.TABLE_NAME,
+                null,
+                mValues
+        );
     }
 
     private void startTracking(){
@@ -126,54 +150,55 @@ public class TripMonitor extends Service implements SensorEventListener, Locatio
     private void stopTracking(){
         tracking = false;
         LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
-        mLocations.clear();
-        mStartLocation = null;
     }
 
     @Override
     public void onLocationChanged(Location location){
-        if(mStartLocation == null) {
-            mStartLocation = location;
+        if(location != null){
+            String date = getDate();
+            String time = getTime();
+            double latitude = location.getLatitude();
+            double longitude = location.getLongitude();
+            float velocity = location.getSpeed();
+
+            addEntry(date, time, latitude, longitude, velocity);
+
+            Log.d("adding entry", "");
+            Log.d("date", date);
+            Log.d("time", time);
+            Log.d("latitude", "" + latitude);
+            Log.d("longitude", "" + longitude);
+            Log.d("velocity", "" + velocity);
+
+
+            evaluateUrgency();
         }else{
-            if(mLocations.size() <= LOC_SAMPLE_SIZE){
-                mLocations.add(location);
-            }
-            else{
-                checkIfTripStarted();
-            }
+            //failed to get location
         }
     }
 
-    private void checkIfTripStarted(){
-        int numPositiveResults = 0;
-        for(Location loc : mLocations){
-            Log.d("distance","" + mStartLocation.distanceTo(loc));
-            if(mStartLocation.distanceTo(loc) >= MIN_DISTANCE_TRIGGER){
+    private String getDate(){
+        String month = String.format("%02d",(mCalendar.get(Calendar.MONTH) + 1));
+        String day = String.format("%02d",mCalendar.get(Calendar.DAY_OF_MONTH));
+        String year = String.format("%02d",mCalendar.get(Calendar.YEAR));
 
-                numPositiveResults++;
-            }
-        }
-        if(numPositiveResults >= MIN_POS_RESULTS){
-            NotificationManager mNotifyMgr =
-                    (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-            NotificationCompat.Builder mBuilder =
-                    new NotificationCompat.Builder(this)
-                            .setSmallIcon(R.mipmap.ic_launcher)
-                            .setContentTitle("Trip started ")
-                            .setContentText(numPositiveResults + " successes");
-            mNotifyMgr.notify(001, mBuilder.build());
-            Log.d("Trip", "trip succeeded due to POS_RESULTS being " + numPositiveResults);
-            stopTracking();
-        }else{
-            Log.d("Trip","trip failed due to POS_RESULTS being " + numPositiveResults);
-            stopTracking();
-        }
+        String date = month + day + year;
+
+        return date;
     }
 
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        // TODO Auto-generated method stub
-        //nothign to see here
+    private String getTime(){
+        String hour = String.format("%02d",mCalendar.get(Calendar.HOUR));
+        String minute = String.format("%02d",mCalendar.get(Calendar.MINUTE));
+        String second = String.format("%02d",mCalendar.get(Calendar.SECOND));
+
+        String time = hour + minute + second;
+
+        return time;
+    }
+
+    private void evaluateUrgency(){
+        //TODO
     }
 
     @Override
@@ -190,7 +215,6 @@ public class TripMonitor extends Service implements SensorEventListener, Locatio
 
     @Override
     public void onDestroy(){
-        mSensorManager.unregisterListener(this);
         LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
         mGoogleApiClient.disconnect();
         mWakeLock.release();
@@ -198,10 +222,12 @@ public class TripMonitor extends Service implements SensorEventListener, Locatio
 
     @Override
     public void onConnected(Bundle arg0) {
+        startTracking();
     }
 
     @Override
     public void onConnectionSuspended(int arg0) {
+        stopTracking();
     }
 
     @Override
