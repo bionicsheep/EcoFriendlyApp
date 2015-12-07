@@ -176,7 +176,6 @@ public class TripMonitor extends Service implements LocationListener,
             Log.d("longitude", "" + longitude);
             Log.d("velocity", "" + velocity);
 
-
             evaluateUrgency();
         }else{
             //failed to get location

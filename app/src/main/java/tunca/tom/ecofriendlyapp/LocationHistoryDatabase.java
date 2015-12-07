@@ -4,9 +4,7 @@ import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
-/**
- * Created by aless_000 on 12/3/2015.
- */
+
 
 public class LocationHistoryDatabase extends SQLiteOpenHelper {
 
