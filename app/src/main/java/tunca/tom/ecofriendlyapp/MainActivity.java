@@ -2,10 +2,9 @@ package tunca.tom.ecofriendlyapp;
 
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -17,29 +16,31 @@ import android.view.MenuItem;
 
 import com.google.android.gms.maps.GoogleMap;
 
+import java.util.Calendar;
+
 public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener, HistoryMapFragment.OnGoogleMapFragmentListener {
+        implements NavigationView.OnNavigationItemSelectedListener, HistoryMapFragment.OnGoogleMapFragmentListener, DatePickerFragment.OnDateSelectedListener {
 
     private String mTitle = "Progress";
-    private GoogleMap mMap;
     private Fragment historyMapFragment;
     private FloatingActionButton fab;
+    private MapHelper mMapHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        mMapHelper = new MapHelper(getApplicationContext());
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
         fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.hide();
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "@TODO Manually starting trip", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                DialogFragment newFragment = new DatePickerFragment();
+                newFragment.show(getSupportFragmentManager(), "datePicker");
             }
         });
 
@@ -53,6 +54,7 @@ public class MainActivity extends AppCompatActivity
         navigationView.setNavigationItemSelectedListener(this);
 
         if (savedInstanceState == null) {
+            fab.hide();
             navigationView.getMenu().getItem(0).setChecked(true);
             getSupportActionBar().setTitle(mTitle);
             startProgressFragment();
@@ -100,7 +102,13 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onMapReady(GoogleMap map) {
-        mMap = map;
+        mMapHelper.setGoogleMap(map);
+        setDate(getDate());
+    }
+
+    @Override
+    public void setDate(String date){
+        mMapHelper.paintHistory(date);
     }
 
     private void startSettingsFragment(){
@@ -127,4 +135,14 @@ public class MainActivity extends AppCompatActivity
         mFragmentManager.beginTransaction().replace(R.id.content_frame, historyMapFragment).commit();
     }
 
+    private String getDate(){
+        Calendar mCalendar = Calendar.getInstance();
+        String month = String.format("%02d", (mCalendar.get(Calendar.MONTH) + 1));
+        String day = String.format("%02d",mCalendar.get(Calendar.DAY_OF_MONTH));
+        String year = String.format("%02d",mCalendar.get(Calendar.YEAR));
+
+        String date = month + day + year;
+
+        return date;
+    }
 }

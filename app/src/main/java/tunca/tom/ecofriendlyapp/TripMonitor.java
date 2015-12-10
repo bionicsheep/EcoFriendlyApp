@@ -103,7 +103,7 @@ public class TripMonitor extends Service implements LocationListener,
     private void initializeLocation(){
         mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         mLocationRequest = LocationRequest.create();
-        mLocationRequest.setInterval(LOCATION_INTERVAL_HIGH); //test
+        mLocationRequest.setInterval(LOCATION_INTERVAL_MED); //test
         mLocationRequest.setFastestInterval(LOCATION_INTERVAL_HIGH);
         mLocationRequest.setPriority(LOCATION_PRIORITY);
     }
@@ -168,7 +168,7 @@ public class TripMonitor extends Service implements LocationListener,
             Log.d("longitude", "" + longitude);
             Log.d("velocity", "" + velocity);
 
-            evaluateUrgency();
+            evaluateUrgency((int)velocity);
         }else{
             //failed to get location
         }
@@ -196,8 +196,12 @@ public class TripMonitor extends Service implements LocationListener,
         return time;
     }
 
-    private void evaluateUrgency(){
-        //TODO
+    private void evaluateUrgency(int velocity){
+        if(velocity > 1){
+            updateRequestPriority(LOCATION_INTERVAL_HIGH);
+        }else{
+            updateRequestPriority(LOCATION_INTERVAL_LOW);
+        }
     }
 
     @Override
