@@ -197,9 +197,13 @@ public class TripMonitor extends Service implements LocationListener,
     }
 
     private void evaluateUrgency(int velocity){
-        if(velocity > 1){
+        if(0 < velocity && velocity < 1){
+            updateRequestPriority(LOCATION_INTERVAL_MED);
+        }
+        else if(velocity > 1){
             updateRequestPriority(LOCATION_INTERVAL_HIGH);
-        }else{
+        }
+        else{
             updateRequestPriority(LOCATION_INTERVAL_LOW);
         }
     }
