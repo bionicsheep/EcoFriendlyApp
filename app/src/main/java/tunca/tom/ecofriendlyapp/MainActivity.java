@@ -5,6 +5,7 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -14,10 +15,15 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
 
+import com.google.android.gms.maps.GoogleMap;
+
 public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener {
+        implements NavigationView.OnNavigationItemSelectedListener, HistoryMapFragment.OnGoogleMapFragmentListener {
 
     private String mTitle = "Progress";
+    private GoogleMap mMap;
+    private Fragment historyMapFragment;
+    private FloatingActionButton fab;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,7 +33,8 @@ public class MainActivity extends AppCompatActivity
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.hide();
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -79,29 +86,45 @@ public class MainActivity extends AppCompatActivity
         } else if (id == R.id.nav_settings) {
             startSettingsFragment();
             mTitle = "Settings";
+
+        } else if (id == R.id.nav_map_history){
+            startMapHistoryFragment();
+            mTitle = "Map History";
             getSupportActionBar().setTitle(mTitle);
+            fab.show();
         }
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
     }
 
-    public void startSettingsFragment(){
+    @Override
+    public void onMapReady(GoogleMap map) {
+        mMap = map;
+    }
+
+    private void startSettingsFragment(){
         SettingsFragment settingsFragment = new SettingsFragment();
         FragmentManager mFragmentManager = getSupportFragmentManager();
         mFragmentManager.beginTransaction().replace(R.id.content_frame, settingsFragment).commit();
     }
 
-    public void startProgressFragment() {
+    private void startProgressFragment() {
         Fragment progressFragment = new ProgressFragment();
         FragmentManager mFragmentManager = getSupportFragmentManager();
         mFragmentManager.beginTransaction().replace(R.id.content_frame, progressFragment).commit();
     }
 
-    public void startTripsFragment(){
+    private void startTripsFragment(){
         Fragment historyFragment = new HistoryFragment();
         FragmentManager mFragmentManager = getSupportFragmentManager();
         mFragmentManager.beginTransaction().replace(R.id.content_frame, historyFragment).commit();
+    }
+
+    private void startMapHistoryFragment(){
+        historyMapFragment = new HistoryMapFragment();
+        FragmentManager mFragmentManager = getSupportFragmentManager();
+        mFragmentManager.beginTransaction().replace(R.id.content_frame, historyMapFragment).commit();
     }
 
 }

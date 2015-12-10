@@ -8,6 +8,8 @@
             android:title="Progress" />
         <item android:id="@+id/nav_history" android:icon="@mipmap/ic_history_black_24dp"
             android:title="History" />
+        <item android:id="@+id/nav_map_history" android:icon="@mipmap/ic_place_black_24dp"
+            android:title="History" />
     </group>
 
     <group
