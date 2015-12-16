@@ -12,7 +12,7 @@ public class Event {
     private double velocity;
     private double accuracy;
 
-    public Event(String time, String date, double xCoor, double yCoor, double velocity, double accuracy){
+    public Event(String date, String time, double xCoor, double yCoor, double velocity, double accuracy){
         this.date = date;
         this.time = time;
         this.xCoor = xCoor;

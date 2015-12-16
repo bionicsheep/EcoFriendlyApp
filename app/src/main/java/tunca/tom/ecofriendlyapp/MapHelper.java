@@ -5,6 +5,7 @@ import android.database.Cursor;
 
 import android.database.sqlite.SQLiteDatabase;
 import android.location.Location;
+import android.util.Log;
 
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -63,18 +64,20 @@ public class MapHelper {
 
         ArrayList<Marker> markers = new ArrayList<Marker>();
         LatLng loc = new LatLng(0, 0);
-        LatLng temp = new LatLng(0, 0);
 
         if(c.getCount() == 0){
             return;
         }
 
         c.moveToFirst();
-        double tempX = c.getFloat(xRow);
-        double tempY =  c.getFloat(yRow);
+        double tempX = 0;
+        double tempY =  0;
         for(c.moveToFirst();!c.isAfterLast(); c.moveToNext()){
+            Log.d("date", "" + c.getString(dateRow).equals(date));
+
             if(c.getString(dateRow).equals(date) && (distanceDifference(tempX, tempY, c.getFloat(xRow), c.getFloat(yRow)) >= 5)) {
                 loc = new LatLng(c.getFloat(xRow), c.getFloat(yRow));
+                Log.d("test", "iterate");
 
                 Marker m = mMap.addMarker(new MarkerOptions()
                         .title("")

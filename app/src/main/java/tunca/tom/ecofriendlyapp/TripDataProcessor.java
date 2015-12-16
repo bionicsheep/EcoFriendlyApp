@@ -74,7 +74,7 @@ public class TripDataProcessor {
         int walkProof = 0;
         int startPoint = start;
 
-        for(int x = startPoint; x < history.size(); x++){
+        for(int x = startPoint; x + 1 < history.size(); x++){
             double disDif = distanceDifference(history.get(x+1), history.get(x));
             double timeDif = getTimeDifference(history.get(x+1).getTime(), history.get(x).getTime());
             Log.d("div","" + (disDif/timeDif));
@@ -94,7 +94,7 @@ public class TripDataProcessor {
 
     private int findWalkEnd(int start){
         int walkCancel = 0;
-        for(int x = start; x < history.size(); x++){
+        for(int x = start; x + 1 < history.size(); x++){
             double disDif = distanceDifference(history.get(x+1), history.get(x));
             double timeDif = getTimeDifference(history.get(x+1).getTime(), history.get(x).getTime());
             if((disDif/timeDif) < 3){
@@ -115,7 +115,7 @@ public class TripDataProcessor {
 
     private int findDriveEnd(int start){
         int driveCancel = 0;
-        for(int x = start; x < history.size(); x++){
+        for(int x = start; x + 1 < history.size(); x++){
             double disDif = distanceDifference(history.get(x+1), history.get(x));
             double timeDif = getTimeDifference(history.get(x+1).getTime(), history.get(x).getTime());
             if((disDif/timeDif) > 3){
