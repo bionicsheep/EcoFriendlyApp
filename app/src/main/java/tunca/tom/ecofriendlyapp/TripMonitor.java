@@ -7,9 +7,10 @@ import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
 import android.content.SharedPreferences;
 import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.location.Location;
-import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.PowerManager;
@@ -22,9 +23,10 @@ import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 
-public class TripMonitor extends Service implements LocationListener,
+public class TripMonitor extends Service implements LocationListener,SensorEventListener,
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener{
 
     //to keep service running when device off
@@ -44,9 +46,8 @@ public class TripMonitor extends Service implements LocationListener,
     private static final int MIN_POS_RESULTS = 2;
     private static final int MIN_DISTANCE_TRIGGER = 60;
     private static final int LOC_SAMPLE_SIZE = 5;
+    private int staleChecks = 0;
 
-    //gps tracking
-    private LocationManager mLocationManager;
     private GoogleApiClient mGoogleApiClient;
     private LocationRequest mLocationRequest;
 
@@ -55,11 +56,15 @@ public class TripMonitor extends Service implements LocationListener,
     private static final int HOUR = MINUTE * 60;
 
     private static final int LOCATION_INTERVAL_LOW = MINUTE * 10;
-    private static final int LOCATION_INTERVAL_MED = MINUTE * 5;
+    private static final int LOCATION_INTERVAL_MED = SECOND * 60;
     private static final int LOCATION_INTERVAL_HIGH = SECOND * 10;
 
     private static final int LOCATION_PRIORITY = LocationRequest.PRIORITY_HIGH_ACCURACY;
-    private int updateUrgency = 0;
+
+
+    private int updateUrgency = 2;
+    private static final int URGENCY_HISTORY = 5;
+    private ArrayList<Event> history = new ArrayList<Event>();
 
     //data storage
     private SQLiteDatabase mDatabase;
@@ -77,6 +82,7 @@ public class TripMonitor extends Service implements LocationListener,
         mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "TripMonitor");
         mWakeLock.acquire();
 
+        initializeAccelorometer();
         initializePreferences();
         buildGoogleApiClient();
         initializeDatabase();
@@ -101,37 +107,55 @@ public class TripMonitor extends Service implements LocationListener,
     }
 
     private void initializeLocation(){
-        mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         mLocationRequest = LocationRequest.create();
-        mLocationRequest.setInterval(LOCATION_INTERVAL_MED); //test
+        mLocationRequest.setInterval(LOCATION_INTERVAL_HIGH);
         mLocationRequest.setFastestInterval(LOCATION_INTERVAL_HIGH);
-        mLocationRequest.setPriority(LOCATION_PRIORITY);
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
     }
 
     private void updateRequestPriority(int urgency){
-        updateUrgency = urgency;
 
-        switch (updateUrgency){
+        int temp = updateUrgency;
+        switch (urgency){
             case 0:
+                Log.d("urgency update", "low");
+                turnOnAccelerometer();
                 mLocationRequest.setInterval(LOCATION_INTERVAL_LOW);
                 break;
             case 1:
+                Log.d("urgency update", "med");
+                turnOnAccelerometer();
                 mLocationRequest.setInterval(LOCATION_INTERVAL_MED);
                 break;
             case 2:
+                Log.d("urgency update", "high");
+                turnOffAccelerometer();
                 mLocationRequest.setInterval(LOCATION_INTERVAL_HIGH);
                 break;
         }
     }
 
-    private void addEntry(String date, String time, double xPos, double yPos, float velocity){
+    private void turnOnAccelerometer(){
+        mSensorManager.registerListener(this, mSensor, SensorManager.SENSOR_DELAY_UI);
+
+        mAcceleration = 0.00f;
+        mAccelerationCurrent = mSensorManager.GRAVITY_EARTH;
+        mAccelerationLast = mSensorManager.GRAVITY_EARTH;
+    }
+
+    private void turnOffAccelerometer(){
+        mSensorManager.unregisterListener(this);
+    }
+
+    private void addEntry(Event event){
         ContentValues mValues = new ContentValues();
 
-        mValues.put(LocationHistoryDatabase.COL_1,date);
-        mValues.put(LocationHistoryDatabase.COL_2,time);
-        mValues.put(LocationHistoryDatabase.COL_3,xPos);
-        mValues.put(LocationHistoryDatabase.COL_4,yPos);
-        mValues.put(LocationHistoryDatabase.COL_5,velocity);
+        mValues.put(LocationHistoryDatabase.COL_1, event.getDate());
+        mValues.put(LocationHistoryDatabase.COL_2, event.getTime());
+        mValues.put(LocationHistoryDatabase.COL_3, event.getxCoor());
+        mValues.put(LocationHistoryDatabase.COL_4, event.getyCoor());
+        mValues.put(LocationHistoryDatabase.COL_5, event.getVelocity());
+        mValues.put(LocationHistoryDatabase.COL_6, event.getAccuracy());
 
         mDatabase.insert(
                 LocationHistoryDatabase.TABLE_NAME,
@@ -157,9 +181,13 @@ public class TripMonitor extends Service implements LocationListener,
             String time = getTime();
             double latitude = location.getLatitude();
             double longitude = location.getLongitude();
-            float velocity = location.getSpeed();
+            double velocity = location.getSpeed();
+            double accuracy = location.getAccuracy();
 
-            addEntry(date, time, latitude, longitude, velocity);
+            Event event = new Event(date, time, latitude, longitude, velocity, accuracy);
+
+            evaluateUniqueness(event);
+            addEntry(event);
 
             Log.d("adding entry", "");
             Log.d("date", date);
@@ -167,8 +195,9 @@ public class TripMonitor extends Service implements LocationListener,
             Log.d("latitude", "" + latitude);
             Log.d("longitude", "" + longitude);
             Log.d("velocity", "" + velocity);
+            Log.d("accuracy", "" + accuracy);
 
-            //evaluateUrgency((int)velocity);
+            evaluateUrgency();
         }else{
             //failed to get location
         }
@@ -196,16 +225,84 @@ public class TripMonitor extends Service implements LocationListener,
         return time;
     }
 
-    private void evaluateUrgency(int velocity){
-        if(0 < velocity && velocity < 1){
-            updateRequestPriority(LOCATION_INTERVAL_MED);
+    private boolean evaluateUniqueness(Event event){
+        boolean uniqueness = true;
+        double difTotal = 0;
+
+        if(history.size() == LOC_SAMPLE_SIZE) {
+            for (Event mEvent : history) {
+                double dif = distanceDifference(event, mEvent);
+
+                difTotal += (dif);
+                Log.d("dif", "" + dif);
+
+            }
+            Log.d("diftotal", "" + difTotal);
+
+
+            if (difTotal >= 20) {
+                uniqueness = true;
+                staleChecks = 0;
+            } else {
+                staleChecks++;
+                uniqueness = false;
+            }
+
+            Log.d("stalechecks", "" + staleChecks);
         }
-        else if(velocity > 1){
-            updateRequestPriority(LOCATION_INTERVAL_HIGH);
+
+        history.add(event);
+        if(history.size() > URGENCY_HISTORY){
+            history.remove(0);
         }
-        else{
-            updateRequestPriority(LOCATION_INTERVAL_LOW);
+
+        return uniqueness;
+    }
+
+    private void evaluateUrgency(){
+
+        if(staleChecks > 10){
+            updateRequestPriority(0);
+        }else if(staleChecks > 5){
+            updateRequestPriority(1);
+        }else if(staleChecks == 0){
+            updateRequestPriority(2);
         }
+    }
+
+    private void initializeAccelorometer(){
+        mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        mSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER){
+            mGravity = event.values.clone();
+
+            float x = mGravity[0];
+            float y = mGravity[1];
+            float z = mGravity[2];
+
+            mAccelerationLast = mAccelerationCurrent;
+
+            mAccelerationCurrent = (float) Math.sqrt(x * x + y * y + z * z);
+            float delta = mAccelerationCurrent - mAccelerationLast;
+            mAcceleration = mAcceleration * 0.9f + delta;
+            // Make this higher or lower according to how much
+            // motion you want to detect
+            if(mAcceleration > 3){
+                updateRequestPriority(3);
+            }
+        }
+    }
+
+
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        // TODO Auto-generated method stub
+        //nothign to see here
     }
 
     @Override
@@ -222,15 +319,16 @@ public class TripMonitor extends Service implements LocationListener,
     }
 
     @Override
-    public void onDestroy(){
+    public void onDestroy() {
         mEditor = mSharedPreferences.edit();
-        mEditor.putBoolean("service_enabled",false);
+        mEditor.putBoolean("service_enabled", false);
         mEditor.commit();
 
         Log.d("service", "service destroyed");
 
         LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
         mGoogleApiClient.disconnect();
+        mSensorManager.unregisterListener(this);
         mWakeLock.release();
     }
 
@@ -246,5 +344,13 @@ public class TripMonitor extends Service implements LocationListener,
 
     @Override
     public void onConnectionFailed(ConnectionResult arg0) {
+    }
+
+    public double distanceDifference(Event event1, Event event2) {
+        float[] results = new float[1];
+        Location.distanceBetween(event1.getxCoor(), event1.getyCoor(),
+                event2.getxCoor(),event2.getyCoor(), results);
+
+        return (double)results[0];
     }
 }

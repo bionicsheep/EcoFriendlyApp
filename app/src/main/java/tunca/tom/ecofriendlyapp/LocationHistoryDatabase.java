@@ -17,6 +17,7 @@ public class LocationHistoryDatabase extends SQLiteOpenHelper {
     public static final String COL_3 = "X_COOR";
     public static final String COL_4 = "Y_COOR";
     public static final String COL_5 = "VELOCITY";
+    public static final String COL_6 = "ACCURACY";
 
     private static final String SQL_INIT_TABLE =
             "CREATE TABLE " + TABLE_NAME + " (" +
@@ -24,7 +25,8 @@ public class LocationHistoryDatabase extends SQLiteOpenHelper {
                     COL_2 + " TEXT," +
                     COL_3 + " REAL," +
                     COL_4 + " REAL," +
-                    COL_5 + " REAL)";
+                    COL_5 + " REAL," +
+                    COL_6 + " REAL)";
 
     public LocationHistoryDatabase(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -37,6 +39,6 @@ public class LocationHistoryDatabase extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-
+        db.execSQL(SQL_INIT_TABLE);
     }
 }

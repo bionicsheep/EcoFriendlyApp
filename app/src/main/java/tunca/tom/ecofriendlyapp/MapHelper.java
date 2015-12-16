@@ -42,6 +42,10 @@ public class MapHelper {
     }
 
     public void paintHistory(String date) {
+        if(mMap == null){
+            return;
+        }
+
         Cursor c = mDatabase.query(
                 LocationHistoryDatabase.TABLE_NAME,  // The table to query
                 projection,                               // The columns to return
@@ -80,7 +84,7 @@ public class MapHelper {
         try{
             LatLngBounds bounds = b.build();
             CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, 10,10,10);
-            mMap.moveCamera(cu);
+            mMap.animateCamera(cu);
         }catch(IllegalStateException ex) {
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(loc, 13));
         }
