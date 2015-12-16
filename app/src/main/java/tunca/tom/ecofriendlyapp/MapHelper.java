@@ -4,6 +4,7 @@ import android.content.Context;
 import android.database.Cursor;
 
 import android.database.sqlite.SQLiteDatabase;
+import android.location.Location;
 
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -62,8 +63,17 @@ public class MapHelper {
 
         ArrayList<Marker> markers = new ArrayList<Marker>();
         LatLng loc = new LatLng(0, 0);
+        LatLng temp = new LatLng(0, 0);
+
+        if(c.getCount() == 0){
+            return;
+        }
+
+        c.moveToFirst();
+        double tempX = c.getFloat(xRow);
+        double tempY =  c.getFloat(yRow);
         for(c.moveToFirst();!c.isAfterLast(); c.moveToNext()){
-            if(c.getString(dateRow).equals(date)) {
+            if(c.getString(dateRow).equals(date) && (distanceDifference(tempX, tempY, c.getFloat(xRow), c.getFloat(yRow)) >= 5)) {
                 loc = new LatLng(c.getFloat(xRow), c.getFloat(yRow));
 
                 Marker m = mMap.addMarker(new MarkerOptions()
@@ -72,6 +82,8 @@ public class MapHelper {
                         .position(loc));
 
                 markers.add(m);
+                tempX = c.getFloat(xRow);
+                tempY = c.getFloat(xRow);
             }
         }
 
@@ -89,6 +101,14 @@ public class MapHelper {
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(loc, 13));
         }
 
+    }
+
+    public double distanceDifference(double xCoor1, double yCoor1, double xCoor2, double yCoor2) {
+        float[] results = new float[1];
+        Location.distanceBetween(xCoor1, yCoor1,
+                xCoor2, yCoor2, results);
+
+        return (double)results[0];
     }
 
 }

@@ -5,6 +5,7 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -25,6 +26,7 @@ public class MainActivity extends AppCompatActivity
     private Fragment historyMapFragment;
     private FloatingActionButton fab;
     private MapHelper mMapHelper;
+    private TripDataProcessor mTripDataProcessor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,6 +34,7 @@ public class MainActivity extends AppCompatActivity
         setContentView(R.layout.activity_main);
 
         mMapHelper = new MapHelper(getApplicationContext());
+        mTripDataProcessor = new TripDataProcessor(getApplicationContext());
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -109,6 +112,10 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void setDate(String date){
         mMapHelper.paintHistory(date);
+
+        mTripDataProcessor.loadData(date);
+        Log.d("driven distance", "" + mTripDataProcessor.getDriveDistance());
+        Log.d("walked distance", "" + mTripDataProcessor.getWalkDistance());
     }
 
     private void startSettingsFragment(){
