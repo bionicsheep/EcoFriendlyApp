@@ -29,6 +29,6 @@
             android:id="@+id/live_wallpaper_check"
             android:defaultValue="false"
             android:key="demo_mode"
-            android:title="Demo mode" />
+            android:title="Export Database" />
     </PreferenceCategory>
 </PreferenceScreen>

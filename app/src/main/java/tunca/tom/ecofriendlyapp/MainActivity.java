@@ -113,9 +113,9 @@ public class MainActivity extends AppCompatActivity
     public void setDate(String date){
         mMapHelper.paintHistory(date);
 
-        mTripDataProcessor.loadData(date);
-        Log.d("driven distance", "" + mTripDataProcessor.getDriveDistance());
-        Log.d("walked distance", "" + mTripDataProcessor.getWalkDistance());
+        //mTripDataProcessor.loadData(date);
+        //Log.d("driven distance", "" + mTripDataProcessor.getDriveDistance());
+        //Log.d("walked distance", "" + mTripDataProcessor.getWalkDistance());
     }
 
     private void startSettingsFragment(){

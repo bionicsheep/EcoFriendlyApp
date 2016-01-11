@@ -72,10 +72,15 @@ public class MapHelper {
         c.moveToFirst();
         double tempX = 0;
         double tempY =  0;
+
+        Log.d("weee"," " + c.getCount());
+
+
         for(c.moveToFirst();!c.isAfterLast(); c.moveToNext()){
             Log.d("date", "" + c.getString(dateRow).equals(date));
 
-            if(c.getString(dateRow).equals(date) && (distanceDifference(tempX, tempY, c.getFloat(xRow), c.getFloat(yRow)) >= 5)) {
+            if(c.getString(dateRow).equals(date)) {
+                Log.d("MapHelper","distance difference " + distanceDifference(tempX, tempY, c.getFloat(xRow), c.getFloat(yRow)));
                 loc = new LatLng(c.getFloat(xRow), c.getFloat(yRow));
                 Log.d("test", "iterate");
 
@@ -89,6 +94,7 @@ public class MapHelper {
                 tempY = c.getFloat(xRow);
             }
         }
+
 
         LatLngBounds.Builder b = new LatLngBounds.Builder();
 
@@ -107,11 +113,11 @@ public class MapHelper {
     }
 
     public double distanceDifference(double xCoor1, double yCoor1, double xCoor2, double yCoor2) {
-        float[] results = new float[1];
-        Location.distanceBetween(xCoor1, yCoor1,
-                xCoor2, yCoor2, results);
+        double difference = Math.sqrt((xCoor1-xCoor2)*(xCoor1-xCoor2) + (yCoor1-yCoor2)*(yCoor1-yCoor2));
 
-        return (double)results[0];
+        difference = (difference / 111319.0);
+
+        return difference;
     }
 
 }
