@@ -5,7 +5,6 @@ import android.database.Cursor;
 
 import android.database.sqlite.SQLiteDatabase;
 import android.location.Location;
-import android.util.Log;
 
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -21,7 +20,6 @@ public class MapHelper {
 
     private GoogleMap mMap;
     private SQLiteDatabase mDatabase;
-    private LocationHistoryDatabase mDatabaseHelper;
 
     private String[] projection = {
             LocationHistoryDatabase.COL_1,
@@ -35,7 +33,7 @@ public class MapHelper {
     }
 
     private void initializeDatabase(Context context){
-        mDatabaseHelper = new LocationHistoryDatabase(context);
+        LocationHistoryDatabase mDatabaseHelper = new LocationHistoryDatabase(context);
         mDatabase = mDatabaseHelper.getReadableDatabase();
     }
 
@@ -62,7 +60,7 @@ public class MapHelper {
         int xRow = c.getColumnIndex(LocationHistoryDatabase.COL_3);
         int yRow = c.getColumnIndex(LocationHistoryDatabase.COL_4);
 
-        ArrayList<Marker> markers = new ArrayList<Marker>();
+        ArrayList<Marker> markers = new ArrayList<>();
         LatLng loc = new LatLng(0, 0);
 
         if(c.getCount() == 0){
@@ -73,28 +71,25 @@ public class MapHelper {
         double tempX = 0;
         double tempY =  0;
 
-        Log.d("weee"," " + c.getCount());
-
-
         for(c.moveToFirst();!c.isAfterLast(); c.moveToNext()){
-            Log.d("date", "" + c.getString(dateRow).equals(date));
-
             if(c.getString(dateRow).equals(date)) {
-                Log.d("MapHelper","distance difference " + distanceDifference(tempX, tempY, c.getFloat(xRow), c.getFloat(yRow)));
+                double dif = distanceDifference(tempX, tempY, c.getFloat(xRow), c.getFloat(yRow));
                 loc = new LatLng(c.getFloat(xRow), c.getFloat(yRow));
-                Log.d("test", "iterate");
 
-                Marker m = mMap.addMarker(new MarkerOptions()
-                        .title("")
-                        .snippet("")
-                        .position(loc));
+                if(dif > 15) {
+                    Marker m = mMap.addMarker(new MarkerOptions()
+                            .title("")
+                            .snippet("")
+                            .position(loc));
 
-                markers.add(m);
-                tempX = c.getFloat(xRow);
-                tempY = c.getFloat(xRow);
+                    markers.add(m);
+                    tempX = c.getFloat(xRow);
+                    tempY = c.getFloat(yRow);
+                }
             }
         }
 
+        c.close();
 
         LatLngBounds.Builder b = new LatLngBounds.Builder();
 
@@ -109,15 +104,12 @@ public class MapHelper {
         }catch(IllegalStateException ex) {
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(loc, 13));
         }
-
     }
 
     public double distanceDifference(double xCoor1, double yCoor1, double xCoor2, double yCoor2) {
-        double difference = Math.sqrt((xCoor1-xCoor2)*(xCoor1-xCoor2) + (yCoor1-yCoor2)*(yCoor1-yCoor2));
-
-        difference = (difference / 111319.0);
-
-        return difference;
+        float[] results = new float[2];
+        Location.distanceBetween(yCoor1, xCoor1, yCoor2, xCoor2, results);
+        return results[0];
     }
 
 }

@@ -14,8 +14,8 @@ public class TripDataProcessor {
     private SQLiteDatabase mDatabase;
     private LocationHistoryDatabase mDatabaseHelper;
 
-    private ArrayList<Event> history = new ArrayList<Event>();
-    private ArrayList<TripSegment> segments = new ArrayList<TripSegment>();
+    private ArrayList<Event> history = new ArrayList<>();
+    private ArrayList<TripSegment> segments = new ArrayList<>();
 
     private String[] projection = {
             LocationHistoryDatabase.COL_1,
@@ -37,7 +37,6 @@ public class TripDataProcessor {
     }
 
     public void loadData(String date){
-
         Cursor c = mDatabase.query(
                 LocationHistoryDatabase.TABLE_NAME,  // The table to query
                 projection,                               // The columns to return
@@ -56,8 +55,6 @@ public class TripDataProcessor {
         int accuracy = c.getColumnIndex(LocationHistoryDatabase.COL_6);
 
         for(c.moveToFirst();!c.isAfterLast(); c.moveToNext()){
-            Log.d("date","" + date);
-            Log.d("daterow","" + c.getString(dateRow));
             if(date.equals(c.getString(dateRow))) {
                 Event mEvent = new Event(c.getString(dateRow), c.getString(timeRow),
                         c.getDouble(xRow), c.getDouble(yRow), c.getDouble(velocity),
@@ -72,12 +69,14 @@ public class TripDataProcessor {
     public void processData(int start){
         int driveProof = 0;
         int walkProof = 0;
+
         int startPoint = start;
 
-        for(int x = startPoint; x + 1 < history.size(); x++){
+        outerloop:
+        for(int x = startPoint; x  < (history.size() - 1); x++){
             double disDif = distanceDifference(history.get(x+1), history.get(x));
             double timeDif = getTimeDifference(history.get(x+1).getTime(), history.get(x).getTime());
-            Log.d("div","" + (disDif/timeDif));
+
             if((disDif/timeDif) > 3){
                 driveProof++;
             }else if((disDif/timeDif) < 3){
@@ -85,21 +84,31 @@ public class TripDataProcessor {
             }
 
             if(walkProof > 3){
-                processData(findWalkEnd(startPoint));
+                int walkEnd = findWalkEnd(startPoint);
+                if(walkEnd != history.size()){
+                    processData(findWalkEnd(startPoint));
+                }else{
+                    break outerloop;
+                }
             }else if(driveProof > 3){
-                processData(findDriveEnd(startPoint));
+                int driveEnd = findDriveEnd(startPoint);
+                if(driveEnd != history.size()){
+                    processData(findDriveEnd(startPoint));
+                }else{
+                    break outerloop;
+                }
             }
         }
     }
 
     private int findWalkEnd(int start){
         int walkCancel = 0;
-        for(int x = start; x + 1 < history.size(); x++){
+        for(int x = start; x < (history.size() - 1); x++){
             double disDif = distanceDifference(history.get(x+1), history.get(x));
             double timeDif = getTimeDifference(history.get(x+1).getTime(), history.get(x).getTime());
-            if((disDif/timeDif) < 3){
+            if((disDif/timeDif) > 3){
                 walkCancel++;
-            }else if((disDif/timeDif) > 3){
+            }else if((disDif/timeDif) < 3){
                 walkCancel = 0;
             }
 
@@ -109,7 +118,8 @@ public class TripDataProcessor {
                 return x;
             }
         }
-
+        TripSegment segment = new TripSegment(start,history.size() - 1,1);
+        segments.add(segment);
         return history.size();
     }
 
@@ -118,9 +128,9 @@ public class TripDataProcessor {
         for(int x = start; x + 1 < history.size(); x++){
             double disDif = distanceDifference(history.get(x+1), history.get(x));
             double timeDif = getTimeDifference(history.get(x+1).getTime(), history.get(x).getTime());
-            if((disDif/timeDif) > 3){
+            if((disDif/timeDif) < 3){
                 driveCancel++;
-            }else if((disDif/timeDif) < 3){
+            }else if((disDif/timeDif) > 3){
                 driveCancel = 0;
             }
 
@@ -130,89 +140,64 @@ public class TripDataProcessor {
                 return x;
             }
         }
+        TripSegment segment = new TripSegment(start,history.size()-1,0);
+        segments.add(segment);
         return history.size();
     }
 
     private double distanceDifference(Event event1, Event event2) {
         float[] results = new float[1];
-        Location.distanceBetween(event1.getxCoor(), event1.getyCoor(),
-                event2.getxCoor(), event2.getyCoor(), results);
+        Location.distanceBetween(event1.getyCoor(), event1.getxCoor(),
+                event2.getyCoor(), event2.getxCoor(), results);
 
         return (double)results[0];
     }
 
-    private int getTimeDifference(String time2, String time1) {
-        int hour1 = Integer.parseInt(time1.substring(0, 1));
-        int minute1 = Integer.parseInt(time1.substring(2, 3));
-        int second1 = Integer.parseInt(time1.substring(4, 5));
 
-        int hour2 = Integer.parseInt(time2.substring(0, 1));
-        int minute2 = Integer.parseInt(time2.substring(2, 3));
-        int second2 = Integer.parseInt(time2.substring(4, 5));
+    //returns time difference in seconds
+    private int getTimeDifference(String time2, String time1) {
+        int hour1 = Integer.parseInt(time1.substring(0, 2));
+        int minute1 = Integer.parseInt(time1.substring(2, 4));
+        int second1 = Integer.parseInt(time1.substring(4, 6));
+
+        int hour2 = Integer.parseInt(time2.substring(0, 2));
+        int minute2 = Integer.parseInt(time2.substring(2, 4));
+        int second2 = Integer.parseInt(time2.substring(4, 6));
 
         int totTime1 = (hour1 * 60 * 60) + (minute1 * 60) + second1;
         int totTime2 = (hour2 * 60 * 60) + (minute2 * 60) + second2;
 
         return totTime2 - totTime1;
-
     }
 
 
-    public double getDriveDistance(){
-        double driveDistance = 0;
+    public double getDriveDisplacement(){
+        double driveDisplacement = 0;
 
         for(int x = 0; x < segments.size(); x++){
             TripSegment seg = segments.get(x);
 
             if(seg.type == 0){
-                for(int n = seg.getStart(); n < seg.getEnd() - 1; n++){
-                    double disDif = distanceDifference(history.get(n+1), history.get(n));
-                    driveDistance += disDif;
-                }
+                double disDif = distanceDifference(history.get(seg.start), history.get(seg.end));
+                driveDisplacement += disDif;
             }
         }
 
-        return driveDistance;
+        return driveDisplacement;
     }
 
-    public double getWalkDistance(){
-        double walkDistance = 0;
+    public double getWalkDisplacement(){
+        double walkDisplacement = 0;
 
         for(int x = 0; x < segments.size(); x++){
             TripSegment seg = segments.get(x);
 
             if(seg.type == 1){
-                for(int n = seg.getStart(); n < seg.getEnd() - 1; n++){
-                    double disDif = distanceDifference(history.get(n+1), history.get(n));
-                    walkDistance += disDif;
-                }
+                double disDif = distanceDifference(history.get(seg.start), history.get(seg.end));
+                walkDisplacement += disDif;
             }
         }
 
-        return walkDistance;
-    }
-}
-
-class TripSegment{
-    int start;
-    int end;
-    int type;
-
-    public TripSegment(int start, int end, int type){
-        this.start = start;
-        this.end = end;
-        this.type = type;
-    }
-
-    public int getStart(){
-        return start;
-    }
-
-    public int getEnd(){
-        return end;
-    }
-
-    public int getType(){
-        return type;
+        return walkDisplacement;
     }
 }
