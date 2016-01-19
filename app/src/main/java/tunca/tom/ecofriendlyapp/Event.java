@@ -7,16 +7,16 @@ public class Event {
 
     private String time;
     private String date;
-    private double xCoor;
-    private double yCoor;
+    private double latitude;
+    private double longitude;
     private double velocity;
     private double accuracy;
 
-    public Event(String date, String time, double xCoor, double yCoor, double velocity, double accuracy){
+    public Event(String date, String time, double latitude, double longitude, double velocity, double accuracy){
         this.date = date;
         this.time = time;
-        this.xCoor = xCoor;
-        this.yCoor = yCoor;
+        this.latitude = latitude;
+        this.longitude = longitude;
         this.velocity = velocity;
         this.accuracy = accuracy;
     }
@@ -29,12 +29,12 @@ public class Event {
         return accuracy;
     }
 
-    public double getxCoor(){
-        return xCoor;
+    public double getLatitude(){
+        return latitude;
     }
 
-    public double getyCoor(){
-        return yCoor;
+    public double getLongitude(){
+        return longitude;
     }
 
     public String getTime(){

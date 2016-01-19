@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,6 +20,8 @@ public class HistoryFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_history, container, false);
         populateTripsList(rootView);
+        testDistance();
+
         return rootView;
     }
 
@@ -29,4 +32,7 @@ public class HistoryFragment extends Fragment {
         listView.setAdapter(adapter);
     }
 
+    private void testDistance(){
+        TripDataProc test = new TripDataProc(getContext());
+    }
 }

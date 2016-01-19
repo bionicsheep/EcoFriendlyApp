@@ -228,8 +228,8 @@ public class TripDataRecorder extends Service implements LocationListener, Googl
 
         mValues.put(LocationHistoryDatabase.COL_1, event.getDate());
         mValues.put(LocationHistoryDatabase.COL_2, event.getTime());
-        mValues.put(LocationHistoryDatabase.COL_3, event.getxCoor());
-        mValues.put(LocationHistoryDatabase.COL_4, event.getyCoor());
+        mValues.put(LocationHistoryDatabase.COL_3, event.getLatitude());
+        mValues.put(LocationHistoryDatabase.COL_4, event.getLongitude());
         mValues.put(LocationHistoryDatabase.COL_5, event.getVelocity());
         mValues.put(LocationHistoryDatabase.COL_6, event.getAccuracy());
 
@@ -291,8 +291,8 @@ public class TripDataRecorder extends Service implements LocationListener, Googl
 
     public double distanceDifference(Event event1, Event event2) {
         float[] results = new float[1];
-        Location.distanceBetween(event1.getxCoor(), event1.getyCoor(),
-                event2.getxCoor(),event2.getyCoor(), results);
+        Location.distanceBetween(event1.getLatitude(), event1.getLongitude(),
+                event2.getLatitude(), event2.getLongitude(), results);
 
         return (double)results[0];
     }
