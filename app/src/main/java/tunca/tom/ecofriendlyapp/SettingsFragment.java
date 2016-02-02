@@ -4,10 +4,9 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Environment;
+import android.support.v4.app.FragmentManager;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceFragmentCompat;
-import android.support.v7.preference.PreferenceManager;
-import android.util.Log;
 import android.widget.Toast;
 
 import java.io.File;
@@ -27,6 +26,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         // Load the preferences from an XML resource
         addPreferencesFromResource(R.xml.main_preferences);
+        setPreferenceClickListener();
     }
 
     @Override
@@ -41,10 +41,27 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
                 getContext().stopService(mIntent);
             }
         }
-        else if(key.equals("demo_mode")) {
-            Log.d("success","success");
-            exportDatabase();
-        }
+    }
+
+    private void setPreferenceClickListener(){
+        Preference exportPref = findPreference("export_database");
+        exportPref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+            public boolean onPreferenceClick(Preference preference) {
+                exportDatabase();
+                return true;
+            }
+        });
+
+        Preference carPref = findPreference("car_model");
+        carPref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+            public boolean onPreferenceClick(Preference preference) {
+                CarSettingsFragment settingsFragment = new CarSettingsFragment();
+                FragmentManager mFragmentManager = getActivity().getSupportFragmentManager();
+                mFragmentManager.beginTransaction().replace(R.id.content_frame, settingsFragment).commit();
+                return true;
+            }
+        });
+
 
     }
 
@@ -87,11 +104,11 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
                     src.close();
                     dst.close();
                 }
-                Toast.makeText(getActivity(), "Export Successful", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Export Successful", Toast.LENGTH_SHORT).show();
             }
         }
         catch (Exception e) {
-            Toast.makeText(getActivity(), "Export failed", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "Export failed", Toast.LENGTH_SHORT).show();
         }
     }
 }

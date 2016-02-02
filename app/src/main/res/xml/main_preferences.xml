@@ -24,11 +24,19 @@
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
         android:title="Miscellaneous" >
+        <Preference
+            android:key="export_database"
+            android:title="Export database" />
+    </PreferenceCategory>
 
-        <SwitchPreferenceCompat
-            android:id="@+id/live_wallpaper_check"
-            android:defaultValue="false"
-            android:key="demo_mode"
-            android:title="Export Database" />
+    <PreferenceCategory
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:title="Car settings" >
+
+        <Preference
+            android:id="@+id/car_model_button"
+            android:key="car_model"
+            android:title="Car model" />
     </PreferenceCategory>
 </PreferenceScreen>

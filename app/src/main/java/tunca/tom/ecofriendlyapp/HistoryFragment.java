@@ -27,7 +27,7 @@ public class HistoryFragment extends Fragment {
 
     private void populateTripsList(View rootView) {
         ArrayList<Trip> arrayOfTrips = Trip.getTrips();
-        CustomTripsAdapter adapter = new CustomTripsAdapter(getActivity().getApplicationContext(), arrayOfTrips);
+        CustomTripsAdapter adapter = new CustomTripsAdapter(getContext(), arrayOfTrips);
         ListView listView = (ListView) rootView.findViewById(R.id.trips_listview);
         listView.setAdapter(adapter);
     }
