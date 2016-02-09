@@ -1,8 +1,6 @@
 package tunca.tom.ecofriendlyapp;
 
-/**
- * Created by aless_000 on 12/16/2015.
- */
+
 public class Event {
 
     private String time;

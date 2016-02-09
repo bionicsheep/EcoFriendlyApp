@@ -104,12 +104,12 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
+    //used in the history map fragment to mark spots on map by using map helper
     public void onMapReady(GoogleMap map) {
         mMapHelper.setGoogleMap(map);
         setDate(getDate());
     }
 
-    @Override
     public void setDate(String date){
         mMapHelper.paintHistory(date);
         mTripDataProc2.loadData(date);

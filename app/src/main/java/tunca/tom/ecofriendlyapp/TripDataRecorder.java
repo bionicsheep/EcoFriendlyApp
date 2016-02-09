@@ -75,6 +75,7 @@ public class TripDataRecorder extends Service implements LocationListener, Googl
         initializeAccelorometer();
         initializeLocation(intervalFrequency);
 
+        //when location actually starts tracking
         mGoogleApiClient.connect();
 
         Log.d("TripDataRecorder","service started " + intervalFrequency);
@@ -103,6 +104,7 @@ public class TripDataRecorder extends Service implements LocationListener, Googl
     }
 
     @Override
+    //googles method with some tweeking
     public void onLocationChanged(Location location) {
         if(location != null){
             String date = getDate();

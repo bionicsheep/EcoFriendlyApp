@@ -58,17 +58,6 @@ public class TripDataProc implements AsyncResponse {
         initializeDatabase(context);
         c = context;
 
-
-        /*
-        //testing
-        double tlat1 = 38.8501078;
-        double tlong1 = -77.03917539999998;
-        double tlat2 = 40.7127837;
-        double tlong2 = -74.00594130000002;
-        Event event1 = new Event("", "", tlat1, tlong1, 0, 0);
-        Event event2 = new Event("", "", tlat2, tlong2, 0, 0);
-        */
-
     }
 
     private void initializeDatabase(Context context){
@@ -128,6 +117,30 @@ public class TripDataProc implements AsyncResponse {
         }
     }
 
+
+    private Event findTripStart(Event start){
+        int uniqueEvents = 0;
+        Event temp = start;
+        int startIndex = history.indexOf(start);
+
+        for(int x = startIndex; x < history.size() - 1; x++){
+            if(distanceDifference(history.get(x+1), history.get(x)) > MIN_UNIQUE_DISTANCE){
+                if(uniqueEvents == 0){
+                    temp = history.get(x);
+                }
+                uniqueEvents++;
+            }else{
+                uniqueEvents = 0;
+            }
+            if(uniqueEvents > MIN_UNIQUE_EVENTS){
+                return temp;
+            }
+        }
+
+        return start;
+    }
+
+
     private Event findTripEnd(Event start){
         Event temp = start;
         int nonUniqueEvents = 0;
@@ -152,27 +165,7 @@ public class TripDataProc implements AsyncResponse {
         return history.get(history.size() - 1);
     }
 
-    private Event findTripStart(Event start){
-        int uniqueEvents = 0;
-        Event temp = start;
-        int startIndex = history.indexOf(start);
 
-        for(int x = startIndex; x < history.size() - 1; x++){
-            if(distanceDifference(history.get(x+1), history.get(x)) > MIN_UNIQUE_DISTANCE){
-                if(uniqueEvents == 0){
-                    temp = history.get(x);
-                }
-                uniqueEvents++;
-            }else{
-                uniqueEvents = 0;
-            }
-            if(uniqueEvents > MIN_UNIQUE_EVENTS){
-                return temp;
-            }
-        }
-
-        return start;
-    }
 
     private void checkTrips(){
         for(TripSeg s : segments){
@@ -189,13 +182,67 @@ public class TripDataProc implements AsyncResponse {
         String url1 = lat1 + "," + long1;
         String url2 = lat2 + "," + long2;
 
-        TimeEstimate drvEst = new TimeEstimate();
-        drvEst.execute(url1, url2, String.valueOf(id));
+        TimeEstimate drvEst = new TimeEstimate(); //async task object
+        drvEst.execute(url1, url2, String.valueOf(id)); //runs the estimate determination //coordinate 1, coordinate2, id
     }
 
+
+
+    private double distanceDifference(Event event1, Event event2) {
+        float[] results = new float[1];
+        Location.distanceBetween(event1.getLatitude(), event1.getLongitude(),
+                event2.getLatitude(), event2.getLongitude(), results);
+
+        return (double)results[0];
+    }
+
+    public void showTotals(){
+        //temp
+        new AlertDialog.Builder(c)
+                .setTitle("Results")
+                .setMessage(Html.fromHtml("Driving: " + drivingTotal + "<br/>" + "Walking: " + walkingTotal
+                        + "<br/>" + "Biking: " + bikingTotal + "<br/>" +  "Transit: " + transitTotal))
+                .show();
+    }
+
+    @Override
+    public void onProcessFinish(String[] result) {
+        TripSeg seg = segments.get(Integer.parseInt(result[4]));
+
+        int actualTimeDif = seg.getDuration();
+        int dif = Math.abs(actualTimeDif - Integer.parseInt(result[0]));
+        int lowest = 0;
+
+        for(int x = 1; x < 4; x++){
+            int tempDiff = Math.abs(actualTimeDif - Integer.parseInt(result[x]));
+            if(tempDiff < dif){
+                dif = tempDiff;
+                lowest = x;
+            }
+        }
+
+        if(lowest == 0){
+            drivingTotal += seg.distanceDifference();
+        }
+        else if(lowest == 1){
+            walkingTotal += seg.distanceDifference();
+        }
+        else if(lowest == 2){
+            bikingTotal += seg.distanceDifference();
+        }
+        else if(lowest == 3){
+            transitTotal += seg.distanceDifference();
+        }
+
+        if(segments.indexOf(seg) + 1 == segments.size()){
+            showTotals();
+        }
+    }
+
+
+    //===============================================
+    //took from google.com
     private class TimeEstimate extends AsyncTask<String, String, String[]>{
-        String type = "";
-        String tripIndex = "";
 
         @Override
         protected String[] doInBackground(String... params) {
@@ -206,7 +253,7 @@ public class TripDataProc implements AsyncResponse {
                 String url2 = "http://maps.googleapis.com/maps/api/directions/json?origin=" + params[0] + "&destination=" + params[1] + "&mode=" + "bicycling" + "&sensor=false";
                 String url3 = "http://maps.googleapis.com/maps/api/directions/json?origin=" + params[0] + "&destination=" + params[1] + "&mode=" + "transit" + "&sensor=false";
 
-
+                //apache help to pull info out of webpage
                 HttpPost httppost0 = new HttpPost(url0);
                 HttpPost httppost1 = new HttpPost(url1);
                 HttpPost httppost2 = new HttpPost(url2);
@@ -287,61 +334,6 @@ public class TripDataProc implements AsyncResponse {
         protected void onPostExecute(String[] result) {
             super.onPostExecute(result);
             delegate.onProcessFinish(result);
-        }
-    }
-
-    private double distanceDifference(Event event1, Event event2) {
-        float[] results = new float[1];
-        Location.distanceBetween(event1.getLatitude(), event1.getLongitude(),
-                event2.getLatitude(), event2.getLongitude(), results);
-
-        return (double)results[0];
-    }
-
-    public void showTotals(){
-        //temp
-        new AlertDialog.Builder(c)
-                .setTitle("Results")
-                .setMessage(Html.fromHtml("Driving: " + drivingTotal + "<br/>" + "Walking: " + walkingTotal
-                        + "<br/>" + "Biking: " + bikingTotal + "<br/>" +  "Transit: " + transitTotal))
-                .show();
-    }
-
-    @Override
-    public void onProcessFinish(String[] result) {
-        Log.d("fsfds","" + Integer.parseInt(result[4]));
-        Log.d("dsds","" + segments.size());
-        TripSeg seg = segments.get(Integer.parseInt(result[4]));
-
-        int actualTimeDif = seg.getDuration();
-        int dif = Math.abs(actualTimeDif - Integer.parseInt(result[0]));
-        Log.d("dif","" + dif);
-        int lowest = 0;
-
-        for(int x = 1; x < 4; x++){
-            int tempDiff = Math.abs(actualTimeDif - Integer.parseInt(result[x]));
-            Log.d("dif","" + tempDiff);
-            if(tempDiff < dif){
-                dif = tempDiff;
-                lowest = x;
-            }
-        }
-
-        if(lowest == 0){
-            drivingTotal += seg.distanceDifference();
-        }
-        else if(lowest == 1){
-            walkingTotal += seg.distanceDifference();
-        }
-        else if(lowest == 2){
-            bikingTotal += seg.distanceDifference();
-        }
-        else if(lowest == 3){
-            transitTotal += seg.distanceDifference();
-        }
-
-        if(segments.indexOf(seg) + 1 == segments.size()){
-            showTotals();
         }
     }
 }
