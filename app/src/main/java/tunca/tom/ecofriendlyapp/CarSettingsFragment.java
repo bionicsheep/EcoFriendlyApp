@@ -180,7 +180,7 @@ public class CarSettingsFragment extends PreferenceFragmentCompat implements Sha
         myPreferences = PreferenceManager.getDefaultSharedPreferences(getContext());
         carBrandPref.setSummary(myPreferences.getString("car_brand_value","ABARTH"));
         carModelPref.setSummary(myPreferences.getString("car_model_value","500"));
-        carYearPref.setSummary(myPreferences.getString("car_year_value","TODO"));
+        carYearPref.setSummary(myPreferences.getString("car_year_value","click to export"));
     }
 
     @Override
