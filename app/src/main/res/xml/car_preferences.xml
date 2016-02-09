@@ -12,6 +12,6 @@
             android:title="Model" />
         <Preference
             android:key="settings_year"
-            android:title="Year" />
+            android:title="Export car db" />
     </PreferenceCategory>
 </PreferenceScreen>
