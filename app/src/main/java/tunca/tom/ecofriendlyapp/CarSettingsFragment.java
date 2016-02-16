@@ -12,7 +12,6 @@ import android.preference.PreferenceManager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceFragmentCompat;
-import android.widget.EditText;
 import android.widget.Toast;
 
 import java.io.BufferedReader;
@@ -29,10 +28,13 @@ public class CarSettingsFragment extends PreferenceFragmentCompat implements Sha
     Preference carModelPref;
     Preference carYearPref;
     SharedPreferences myPreferences;
-    private SQLiteDatabase mDatabase;
+    private SQLiteDatabase mLongDatabase;
     private ProgressDialog mProgDialog;
 
-    private static final String MANUFACTURER_COL = "Manufacturer";
+    private String selectedMake;
+    private String selectedModel;
+    private String[] makeArray;
+    private String[] modelArray;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -44,22 +46,28 @@ public class CarSettingsFragment extends PreferenceFragmentCompat implements Sha
         // Load the preferences from an XML resource
         addPreferencesFromResource(R.xml.car_preferences);
 
+        //initialize database
+        initializeDatabase(getContext());
+
         //Load last entered values for car
         setPreviousValues();
+
+        //initializeMake
+        initializeMake();
+
+        //initializeModel()
+        initializeModel();
 
         //Add listeners for when you click on each setting
         setPreferenceClickListener();
 
-        //initialize database
-        initializeDatabase(getContext());
-
         //insert values
-        initializeValues();
+        insertValues();
     }
 
-    private void initializeValues(){
+    private void insertValues(){
         //check if database was already populated, if so return
-        Cursor mCursor = mDatabase.rawQuery("SELECT * FROM " + "vehicles", null);
+        Cursor mCursor = mLongDatabase.rawQuery("SELECT * FROM " + "vehicles", null);
         if(mCursor.getCount() != 0){
             return;
         }
@@ -79,7 +87,6 @@ public class CarSettingsFragment extends PreferenceFragmentCompat implements Sha
             {
                 try {
                     int result = 0;
-
                     // Open the resource
                     InputStream insertsStream = getContext().getResources().openRawResource(R.raw.car_creation_script);
                     BufferedReader insertReader = new BufferedReader(new InputStreamReader(insertsStream));
@@ -87,8 +94,8 @@ public class CarSettingsFragment extends PreferenceFragmentCompat implements Sha
                     // Iterate through lines (assuming each insert has its own line and theres no other stuff)
                     while (insertReader.ready()) {
                         String insertStmt = insertReader.readLine();
-                        mDatabase.execSQL(insertStmt);
-                        getActivity().runOnUiThread(new Runnable(){
+                        mLongDatabase.execSQL(insertStmt);
+                        getActivity().runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
                                 mProgDialog.incrementProgressBy(1);
@@ -107,9 +114,62 @@ public class CarSettingsFragment extends PreferenceFragmentCompat implements Sha
         }.start();
     }
 
+    private void initializeMake(){
+        String[] columns = {"make"};
+        //query to get list
+        Cursor c = mLongDatabase.query(
+                true, //unique values
+                "vehicles", //table
+                columns, //only "make"
+                null,
+                null,
+                null,
+                null,
+                "make ASC", //"sort alphabetically"
+                null);
+
+        makeArray = new String[c.getCount()];
+        int makeRow = c.getColumnIndex("make");
+        int index = 0;
+
+        //go through cursor of returned values from query and add to array
+        for(c.moveToFirst();!c.isAfterLast(); c.moveToNext()){
+            makeArray[index] = c.getString(makeRow);
+            index++;
+        }
+        c.close();
+    }
+
+    //initializes an array of all models based on the make/brand selected
+    private void initializeModel(){
+        String[] columns = {"model"};
+        //query to get list
+        Cursor c = mLongDatabase.query(
+                true, //unique values
+                "vehicles", //table
+                columns, //only "model"
+                "make= '" + selectedMake + "'", //only pull up matching the make/brand
+                null,
+                null,
+                null,
+                "make ASC", //alphabetical sort
+                null);
+
+        modelArray = new String[c.getCount()];
+        int modelRow = c.getColumnIndex("model");
+        int index = 0;
+
+        //go through cursor of returned values from query and add to array
+        for(c.moveToFirst();!c.isAfterLast(); c.moveToNext()){
+            modelArray[index] = c.getString(modelRow);
+            index++;
+        }
+        c.close();
+    }
+
     private void initializeDatabase(Context context){
         CarDatabase mDatabaseHelper = new CarDatabase(context);
-        mDatabase = mDatabaseHelper.getReadableDatabase();
+        mLongDatabase = mDatabaseHelper.getReadableDatabase();
     }
 
     private void setPreferenceClickListener(){
@@ -117,14 +177,14 @@ public class CarSettingsFragment extends PreferenceFragmentCompat implements Sha
         //will create a popup with the hint, preference to be updated (itself), and the setting name corresponding to the fired preference
         carBrandPref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
             public boolean onPreferenceClick(Preference preference) {
-                buildPopUp("Car brand",carBrandPref,"car_brand_value");
+                buildMakePopUp();
                 return false;
             }
         });
 
         carModelPref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
             public boolean onPreferenceClick(Preference preference) {
-                buildPopUp("Car model",carModelPref,"car_model_value");
+                buildModelPopUp();
                 return false;
             }
         });
@@ -137,6 +197,7 @@ public class CarSettingsFragment extends PreferenceFragmentCompat implements Sha
 
     }
 
+    //exports database of cars
     private void exportDatabase(){
         try
         {
@@ -176,11 +237,14 @@ public class CarSettingsFragment extends PreferenceFragmentCompat implements Sha
         carModelPref = findPreference("settings_model");
         carYearPref = findPreference("settings_year");
 
-        //applies last values, if none exist default to ABARTH 500 TODO
+        //applies last values, if none exist default to Audi R8
         myPreferences = PreferenceManager.getDefaultSharedPreferences(getContext());
-        carBrandPref.setSummary(myPreferences.getString("car_brand_value","ABARTH"));
-        carModelPref.setSummary(myPreferences.getString("car_model_value","500"));
-        carYearPref.setSummary(myPreferences.getString("car_year_value","click to export"));
+        selectedMake = myPreferences.getString("car_brand_value","Audi");
+        selectedModel = myPreferences.getString("car_model_value","R8");
+
+        carBrandPref.setSummary(selectedMake);
+        carModelPref.setSummary(selectedModel);
+        carYearPref.setSummary("click to export");
     }
 
     @Override
@@ -198,38 +262,68 @@ public class CarSettingsFragment extends PreferenceFragmentCompat implements Sha
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-
+        //nada
     }
 
-    //creates a popup for when you click a preference.
-    private void buildPopUp(String hint, Preference parent, String pref){
-        final EditText txtUrl = new EditText(getContext());
+    //popup when selecting model
+    private void buildModelPopUp(){
+        AlertDialog.Builder b = new AlertDialog.Builder(getContext());
+        b.setTitle("Model");
+        b.setItems(modelArray, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                //local save for pulling
+                selectedModel = modelArray[which];
+                //saves whatever preference you changed
+                SharedPreferences.Editor editor = myPreferences.edit();
+                editor.putString("car_model_value", selectedModel);
+                editor.commit();
 
-        txtUrl.setHint(hint);
+                //update actual text
+                carModelPref.setSummary(selectedModel);
 
-        //finalize variables so alert dialog can use them (has to be final)
-        final Preference mParent = parent;
-        final String mPref = pref;
+                //dismiss popup
+                dialog.dismiss();
+            }
 
-        //create dialog
-        new AlertDialog.Builder(getContext())
-                .setView(txtUrl)
-                //set confirm button actions
-                .setPositiveButton("Confirm", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int whichButton) {
-                        //saves whatever preference you changed
-                        SharedPreferences.Editor editor = myPreferences.edit();
-                        mParent.setSummary(txtUrl.getText().toString());
-                        editor.putString(mPref, txtUrl.getText().toString());
-                        editor.commit();
-                    }
-                })
-                //if you hit cancel
-                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int whichButton) {
-                    }
-                })
-                //show the dialog
-                .show();
+        });
+        b.show();
+    }
+
+    //popup when selecting make/brand
+    private void buildMakePopUp(){
+        AlertDialog.Builder b = new AlertDialog.Builder(getContext());
+        b.setTitle("Brand");
+        b.setItems(makeArray, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                //local save for pulling
+                selectedMake = makeArray[which];
+                //saves whatever preference you changed
+                SharedPreferences.Editor editor = myPreferences.edit();
+                editor.putString("car_brand_value", selectedMake);
+                editor.commit();
+                //update actual text
+                carBrandPref.setSummary(selectedMake);
+
+                //----------------------------------------------------------------
+                //reload all models for new selected brand and set to first option
+                //----------------------------------------------------------------
+                initializeModel();
+                selectedModel = modelArray[0];
+                //saves whatever preference you changed
+                editor = myPreferences.edit();
+                editor.putString("car_model_value", selectedModel);
+                editor.commit();
+
+                //update actual text
+                carModelPref.setSummary(selectedModel);
+
+                //dismiss popup
+                dialog.dismiss();
+            }
+
+        });
+        b.show();
     }
 }

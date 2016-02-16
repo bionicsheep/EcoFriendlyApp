@@ -8,7 +8,6 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class CarDatabase extends SQLiteOpenHelper {
 
     public static final int DATABASE_VERSION = 2;
-
     public static final String CAR_DATABASE_NAME = "CarData.db";
     public static final String CAR_TABLE_NAME = "vehicles";
 
@@ -97,6 +96,8 @@ public class CarDatabase extends SQLiteOpenHelper {
                     "phevCity INT," +
                     "phevHwy INT," +
                     "phevComb INT)";
+
+
 
 
     public CarDatabase(Context context) {
