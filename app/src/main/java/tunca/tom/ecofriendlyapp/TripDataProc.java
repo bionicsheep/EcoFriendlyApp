@@ -1,13 +1,11 @@
 package tunca.tom.ecofriendlyapp;
 
+import android.app.Activity;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.location.Location;
 import android.os.AsyncTask;
-import android.support.v7.app.AlertDialog;
-import android.text.Html;
-import android.util.Log;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,6 +40,10 @@ public class TripDataProc implements AsyncResponse {
     private int walkingTotal = 0;
     private int transitTotal = 0;
 
+    private int daysRecorded = 0;
+
+    private ArrayList<Trip> mTripList = new ArrayList<>();
+
     private Context c;
 
     private String[] projection = {
@@ -57,12 +59,47 @@ public class TripDataProc implements AsyncResponse {
         TripDataProc.delegate = this;
         initializeDatabase(context);
         c = context;
-
     }
 
     private void initializeDatabase(Context context){
         mDatabaseHelper = new LocationHistoryDatabase(context);
         mDatabase = mDatabaseHelper.getReadableDatabase();
+    }
+
+    public ArrayList<Trip> loadHistory(){
+        String[] dates;
+
+        String[] columns = {"DATE"};
+        //query to get list
+        Cursor c = mDatabase.query(
+                true, //unique values
+                "location_data", //table
+                columns, //only "date"
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
+
+        daysRecorded = c.getCount(); //number of days we have recorded during
+
+        dates = new String[c.getCount()];
+        int row = c.getColumnIndex("DATE");
+        int index = 0;
+
+        //go through cursor of returned values from query and add to array
+        for(c.moveToFirst();!c.isAfterLast(); c.moveToNext()){
+            dates[index] = c.getString(row);
+            index++;
+        }
+        c.close();
+
+        for(String x : dates){
+            loadData(x);
+        }
+
+        return mTripList;
     }
 
     public void loadData(String date){
@@ -99,9 +136,8 @@ public class TripDataProc implements AsyncResponse {
             }
         }
 
-
         findTrips(0);
-        checkTrips();
+        checkTrips(date);
     }
 
     private void findTrips(int startIndex){
@@ -136,7 +172,6 @@ public class TripDataProc implements AsyncResponse {
                 return temp;
             }
         }
-
         return start;
     }
 
@@ -156,24 +191,20 @@ public class TripDataProc implements AsyncResponse {
             }else{
                 nonUniqueEvents = 0;
             }
-
             if(nonUniqueEvents > MAX_NON_UNIQUE_EVENTS){
                 return temp;
             }
         }
-
         return history.get(history.size() - 1);
     }
 
-
-
-    private void checkTrips(){
+    private void checkTrips(String date){
         for(TripSeg s : segments){
-            getTimeEstimate(s.getStart(), s.getEnd(), segments.indexOf(s));
+            getTimeEstimate(s.getStart(), s.getEnd(), segments.indexOf(s), date);
         }
     }
 
-    private void getTimeEstimate(Event start, Event end, int id){
+    private void getTimeEstimate(Event start, Event end, int id, String date){
         double lat1 = start.getLatitude();
         double long1 = start.getLongitude();
         double lat2 = end.getLatitude();
@@ -183,10 +214,8 @@ public class TripDataProc implements AsyncResponse {
         String url2 = lat2 + "," + long2;
 
         TimeEstimate drvEst = new TimeEstimate(); //async task object
-        drvEst.execute(url1, url2, String.valueOf(id)); //runs the estimate determination //coordinate 1, coordinate2, id
+        drvEst.execute(url1, url2, String.valueOf(id), date); //runs the estimate determination //coordinate 1, coordinate2, id
     }
-
-
 
     private double distanceDifference(Event event1, Event event2) {
         float[] results = new float[1];
@@ -194,15 +223,6 @@ public class TripDataProc implements AsyncResponse {
                 event2.getLatitude(), event2.getLongitude(), results);
 
         return (double)results[0];
-    }
-
-    public void showTotals(){
-        //temp
-        new AlertDialog.Builder(c)
-                .setTitle("Results")
-                .setMessage(Html.fromHtml("Driving: " + drivingTotal + "<br/>" + "Walking: " + walkingTotal
-                        + "<br/>" + "Biking: " + bikingTotal + "<br/>" +  "Transit: " + transitTotal))
-                .show();
     }
 
     @Override
@@ -213,7 +233,7 @@ public class TripDataProc implements AsyncResponse {
         int dif = Math.abs(actualTimeDif - Integer.parseInt(result[0]));
         int lowest = 0;
 
-        for(int x = 1; x < 4; x++){
+        for(int x = 1; x < result.length; x++){
             int tempDiff = Math.abs(actualTimeDif - Integer.parseInt(result[x]));
             if(tempDiff < dif){
                 dif = tempDiff;
@@ -234,8 +254,15 @@ public class TripDataProc implements AsyncResponse {
             transitTotal += seg.distanceDifference();
         }
 
+        //when done with all segments of day
         if(segments.indexOf(seg) + 1 == segments.size()){
-            showTotals();
+            Trip x = new Trip(result[5],walkingTotal,drivingTotal,transitTotal,bikingTotal); //create Trip (days date) and add to list
+            mTripList.add(x);
+
+            if(mTripList.size() == daysRecorded){
+                //all the async tasks have finished and the arraylist is processed
+                ((MainActivity)c).loadCompleteLists(mTripList);
+            }
         }
     }
 
@@ -243,10 +270,9 @@ public class TripDataProc implements AsyncResponse {
     //===============================================
     //took from google.com
     private class TimeEstimate extends AsyncTask<String, String, String[]>{
-
         @Override
         protected String[] doInBackground(String... params) {
-            String[] outputs = new String[5];
+            String[] outputs = new String[6];
             try {
                 String url0 = "http://maps.googleapis.com/maps/api/directions/json?origin=" + params[0] + "&destination=" + params[1] + "&mode=" + "driving" + "&sensor=false";
                 String url1 = "http://maps.googleapis.com/maps/api/directions/json?origin=" + params[0] + "&destination=" + params[1] + "&mode=" + "walking" + "&sensor=false";
@@ -289,6 +315,7 @@ public class TripDataProc implements AsyncResponse {
                 }
 
                 outputs[4] = params[2]; //id
+                outputs[5] = params[3]; //date
 
             } catch (ClientProtocolException e) {
             } catch (IOException e) {

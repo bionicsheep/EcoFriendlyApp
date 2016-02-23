@@ -6,13 +6,31 @@
     android:layout_height="match_parent"
     android:padding="16dp">
     <TextView
-        android:id="@+id/tripDate"
+        android:id="@+id/tripDateTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textSize="16sp"
         style="@style/AppTheme.CardTitle"/>
     <TextView
-        android:id="@+id/tripDistance"
+        android:id="@+id/tripDriveTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        style="@style/AppTheme.CardSubtitle" />
+    <TextView
+        android:id="@+id/tripWalkTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        style="@style/AppTheme.CardSubtitle" />
+    <TextView
+        android:id="@+id/tripTransitTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        style="@style/AppTheme.CardSubtitle" />
+    <TextView
+        android:id="@+id/tripBikeTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textSize="14sp"

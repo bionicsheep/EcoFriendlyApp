@@ -5,7 +5,6 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -17,6 +16,7 @@ import android.view.MenuItem;
 
 import com.google.android.gms.maps.GoogleMap;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 
 public class MainActivity extends AppCompatActivity
@@ -26,7 +26,9 @@ public class MainActivity extends AppCompatActivity
     private Fragment historyMapFragment;
     private FloatingActionButton fab;
     private MapHelper mMapHelper;
-    private TripDataProc mTripDataProc2;
+    private TripDataProc mTripDataProc;
+
+    public ArrayList<Trip> mCompletedTripsList = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,7 +36,7 @@ public class MainActivity extends AppCompatActivity
         setContentView(R.layout.activity_main);
 
         mMapHelper = new MapHelper(getApplicationContext());
-        mTripDataProc2 = new TripDataProc(this);
+        mTripDataProc = new TripDataProc(this);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -55,12 +57,14 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+        fab.hide();
 
         if (savedInstanceState == null) {
-            fab.hide();
             navigationView.getMenu().getItem(0).setChecked(true);
             getSupportActionBar().setTitle(mTitle);
             startProgressFragment();
+            mTripDataProc = new TripDataProc(this);
+            mTripDataProc.loadHistory();
         }
     }
 
@@ -82,16 +86,18 @@ public class MainActivity extends AppCompatActivity
             startProgressFragment();
             mTitle = "Progress";
             getSupportActionBar().setTitle(mTitle);
+            fab.hide();
         } else if (id == R.id.nav_history) {
             startTripsFragment();
             mTitle = "History";
             getSupportActionBar().setTitle(mTitle);
+            fab.hide();
         } else if (id == R.id.nav_share) {
             //TODO
         } else if (id == R.id.nav_settings) {
             startSettingsFragment();
             mTitle = "Settings";
-
+            fab.hide();
         } else if (id == R.id.nav_map_history){
             startMapHistoryFragment();
             mTitle = "Map History";
@@ -112,7 +118,6 @@ public class MainActivity extends AppCompatActivity
 
     public void setDate(String date){
         mMapHelper.paintHistory(date);
-        mTripDataProc2.loadData(date);
     }
 
     private void startSettingsFragment(){
@@ -148,5 +153,9 @@ public class MainActivity extends AppCompatActivity
         String date = month + day + year;
 
         return date;
+    }
+
+    public void loadCompleteLists(ArrayList<Trip> list){
+        mCompletedTripsList = list;
     }
 }

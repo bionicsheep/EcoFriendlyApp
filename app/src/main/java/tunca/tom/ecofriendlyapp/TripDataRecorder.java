@@ -80,7 +80,7 @@ public class TripDataRecorder extends Service implements LocationListener, Googl
 
         Log.d("TripDataRecorder","service started " + intervalFrequency);
 
-        return START_STICKY;
+        return START_REDELIVER_INTENT; //got the stupid crash bug fixed
     }
 
     @Override
