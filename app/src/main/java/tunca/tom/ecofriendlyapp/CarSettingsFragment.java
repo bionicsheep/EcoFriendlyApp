@@ -12,6 +12,7 @@ import android.preference.PreferenceManager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceFragmentCompat;
+import android.util.Log;
 import android.widget.Toast;
 
 import java.io.BufferedReader;
@@ -167,6 +168,34 @@ public class CarSettingsFragment extends PreferenceFragmentCompat implements Sha
         c.close();
     }
 
+    private int getCO2(){
+        String[] columns = {"model","make","co2TailpipeGpm"};
+        //query to get list
+        Cursor c = mLongDatabase.query(
+                true, //unique values
+                "vehicles", //table
+                columns, //only "model"
+                "make= '" + selectedMake + "'", //only pull up matching the make/brand
+                null,
+                null,
+                null,
+                "make ASC", //alphabetical sort
+                null);
+
+        int co2Row = c.getColumnIndex("co2TailpipeGpm");
+        int modelRow = c.getColumnIndex("model");
+        int emission = 0;
+
+        //go through cursor of returned values from query and add to array
+        for(c.moveToFirst();!c.isAfterLast(); c.moveToNext()){
+            if(c.getString(modelRow) == selectedModel){
+                emission = Integer.parseInt(c.getString(co2Row));
+            }
+        }
+        c.close();
+        return emission;
+    }
+
     private void initializeDatabase(Context context){
         CarDatabase mDatabaseHelper = new CarDatabase(context);
         mLongDatabase = mDatabaseHelper.getReadableDatabase();
@@ -314,6 +343,11 @@ public class CarSettingsFragment extends PreferenceFragmentCompat implements Sha
                 //saves whatever preference you changed
                 editor = myPreferences.edit();
                 editor.putString("car_model_value", selectedModel);
+                editor.commit();
+
+                //load CO2 emissions for that car
+                editor = myPreferences.edit();
+                editor.putInt("car_co2_value", getCO2());
                 editor.commit();
 
                 //update actual text

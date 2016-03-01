@@ -22,6 +22,11 @@ import java.util.Calendar;
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener, HistoryMapFragment.OnGoogleMapFragmentListener, DatePickerFragment.OnDateSelectedListener {
 
+    public static final int WALKING_EMISSION = 0;
+    public static final int METRO_EMISSION = 0;
+    public static final int BUS_EMISSION = 0;
+    public static final int BIKE_EMISSION = 0;
+
     private String mTitle = "Progress";
     private Fragment historyMapFragment;
     private FloatingActionButton fab;
