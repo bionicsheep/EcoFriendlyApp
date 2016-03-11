@@ -1,11 +1,11 @@
 package tunca.tom.ecofriendlyapp;
 
-import android.app.Activity;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.location.Location;
 import android.os.AsyncTask;
+import android.util.Log;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -234,6 +234,7 @@ public class TripDataProc implements AsyncResponse {
         int lowest = 0;
 
         for(int x = 1; x < result.length; x++){
+            Log.d("size","" + x + " " + result.length);
             int tempDiff = Math.abs(actualTimeDif - Integer.parseInt(result[x]));
             if(tempDiff < dif){
                 dif = tempDiff;
@@ -279,36 +280,32 @@ public class TripDataProc implements AsyncResponse {
                 String url2 = "http://maps.googleapis.com/maps/api/directions/json?origin=" + params[0] + "&destination=" + params[1] + "&mode=" + "bicycling" + "&sensor=false";
                 String url3 = "http://maps.googleapis.com/maps/api/directions/json?origin=" + params[0] + "&destination=" + params[1] + "&mode=" + "transit" + "&sensor=false";
 
-                //apache help to pull info out of webpage
-                HttpPost httppost0 = new HttpPost(url0);
-                HttpPost httppost1 = new HttpPost(url1);
-                HttpPost httppost2 = new HttpPost(url2);
-                HttpPost httppost3 = new HttpPost(url3);
+                String[] urls = {url0,url1,url2,url3};
 
-                HttpClient client0 = new DefaultHttpClient();
-                HttpClient client1 = new DefaultHttpClient();
-                HttpClient client2 = new DefaultHttpClient();
-                HttpClient client3 = new DefaultHttpClient();
+                for(int x = 0; x < 4; x++) {
+                    int sleepTimer = 0;
 
-                HttpResponse response0 = client0.execute(httppost0);
-                HttpResponse response1 = client1.execute(httppost1);
-                HttpResponse response2 = client2.execute(httppost2);
-                HttpResponse response3 = client3.execute(httppost3);
+                    getStream:
+                    while (true) {
+                        Log.d("sleepTimer","" + sleepTimer);
+                        try {
+                            Thread.sleep(sleepTimer);
+                        } catch (InterruptedException ex) {
 
-                HttpEntity entity0 = response0.getEntity();
-                HttpEntity entity1 = response1.getEntity();
-                HttpEntity entity2 = response2.getEntity();
-                HttpEntity entity3 = response3.getEntity();
+                        }
+                        sleepTimer += 500;
 
-                InputStream stream0 = entity0.getContent();
-                InputStream stream1 = entity1.getContent();
-                InputStream stream2 = entity2.getContent();
-                InputStream stream3 = entity3.getContent();
-
-                outputs[0] = getStreamOutput(stream0);
-                outputs[1] = getStreamOutput(stream1);
-                outputs[2] = getStreamOutput(stream2);
-                outputs[3] = getStreamOutput(stream3);
+                        HttpPost httppost = new HttpPost(urls[x]);
+                        HttpClient client = new DefaultHttpClient();
+                        HttpResponse response = client.execute(httppost);
+                        HttpEntity entity = response.getEntity();
+                        InputStream stream = entity.getContent();
+                        outputs[x] = getStreamOutput(stream);
+                        if(!isEmpty(outputs[x])){
+                            break getStream;
+                        }
+                    }
+                }
 
                 for(int x = 0; x < 4; x++){
                     outputs[x] = getEstimate(outputs[x]);
@@ -355,6 +352,19 @@ public class TripDataProc implements AsyncResponse {
                 e.printStackTrace();
             }
             return estimate;
+        }
+
+        private boolean isEmpty(String streamOutput){
+            try {
+                JSONObject jsonObject = new JSONObject(streamOutput);
+                Log.d("error","" + jsonObject.has("error_message"));
+                String error = jsonObject.getString("error_message");
+                return true;
+            } catch (JSONException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            return false;
         }
 
         @Override
