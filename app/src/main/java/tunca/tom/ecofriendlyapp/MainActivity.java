@@ -24,7 +24,7 @@ public class MainActivity extends AppCompatActivity
 
     public static final int WALKING_EMISSION = 0;
     public static final int METRO_EMISSION = 0;
-    public static final double BUS_EMISSION = 0.1725;
+    public static final int BUS_EMISSION = 0;
     public static final int BIKE_EMISSION = 0;
 
     private String mTitle = "Progress";
