@@ -69,7 +69,7 @@ public class MainActivity extends AppCompatActivity
             getSupportActionBar().setTitle(mTitle);
             startProgressFragment();
             mTripDataProc = new TripDataProc(this);
-            mTripDataProc.loadHistory();
+            //mTripDataProc.loadHistory();
         }
     }
 
