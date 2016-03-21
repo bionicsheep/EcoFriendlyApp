@@ -357,9 +357,9 @@ public class TripDataProc implements AsyncResponse {
         private boolean isEmpty(String streamOutput){
             try {
                 JSONObject jsonObject = new JSONObject(streamOutput);
-                Log.d("error","" + jsonObject.has("error_message"));
-                String error = jsonObject.getString("error_message");
-                return true;
+                if(jsonObject.has("error_message")){
+                    return true;
+                }
             } catch (JSONException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
