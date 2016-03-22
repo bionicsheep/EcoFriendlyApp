@@ -38,7 +38,7 @@ public class TripDataRecorder extends Service implements LocationListener, Googl
     private SQLiteDatabase mDatabase;
 
     //frequency for updates
-    int intervalFrequency;
+    int intervalFrequency = LOCATION_INTERVAL_HIGH;
 
     //time constants
     private static final int SECOND = 1000;
@@ -48,12 +48,15 @@ public class TripDataRecorder extends Service implements LocationListener, Googl
     private static final int LOCATION_INTERVAL_MED = SECOND * 60;
     private static final int LOCATION_INTERVAL_HIGH = SECOND * 10;
 
+    private static final int LOC_HISTORY_BUFFER = 5;
+    private static final int MIN_TOTAL_CHANGE = 60; //meters
+    private static final int ALLOW_CENTER_DIFFERENCE = MIN_TOTAL_CHANGE / (LOC_HISTORY_BUFFER);
+
     //date and time stuff
     private Calendar mCalendar;
 
     //urgency and history evaluation
-    private static final int URGENCY_HISTORY = 5;
-    private static final int LOC_SAMPLE_SIZE = 5;
+    private static final int MAX_INACCURACY = 80; //meters
     private ArrayList<Event> history = new ArrayList<>();
     private int staleChecks = 1;
 
@@ -66,8 +69,7 @@ public class TripDataRecorder extends Service implements LocationListener, Googl
     private float  mAccelerationLast;
 
     @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        intervalFrequency = intent.getIntExtra("intervalFrequency", LOCATION_INTERVAL_HIGH);
+    public void onCreate(){
 
         initializeWakeLock();
         buildGoogleApiClient();
@@ -77,6 +79,12 @@ public class TripDataRecorder extends Service implements LocationListener, Googl
 
         //when location actually starts tracking
         mGoogleApiClient.connect();
+
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        intervalFrequency = intent.getIntExtra("intervalFrequency", LOCATION_INTERVAL_HIGH);
 
         Log.d("TripDataRecorder","service started " + intervalFrequency);
 
@@ -104,7 +112,7 @@ public class TripDataRecorder extends Service implements LocationListener, Googl
     }
 
     @Override
-    //googles method with some tweeking
+    //googles method with some tweaking
     public void onLocationChanged(Location location) {
         if(location != null){
             String date = getDate();
@@ -114,18 +122,22 @@ public class TripDataRecorder extends Service implements LocationListener, Googl
             double velocity = location.getSpeed();
             double accuracy = location.getAccuracy();
 
-            Event event = new Event(date, time, latitude, longitude, velocity, accuracy);
-
-            evaluateUniqueness(event);
-            addEntry(event);
-
-            Log.d("adding entry", "");
+            Log.d("new location", "");
             Log.d("date", date);
             Log.d("time", time);
             Log.d("latitude", "" + latitude);
             Log.d("longitude", "" + longitude);
             Log.d("velocity", "" + velocity);
             Log.d("accuracy", "" + accuracy);
+
+            //if point is too inaccurate to trust
+            if(accuracy > MAX_INACCURACY){
+                return;
+            }
+
+            Event event = new Event(date, time, latitude, longitude, velocity, accuracy);
+
+            evaluateUniqueness(event);
             evaluateUrgency();
         }
     }
@@ -152,7 +164,7 @@ public class TripDataRecorder extends Service implements LocationListener, Googl
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        //nothign to see here
+        //nothing to see here
     }
 
     private void buildGoogleApiClient() {
@@ -250,32 +262,114 @@ public class TripDataRecorder extends Service implements LocationListener, Googl
     }
 
     private void evaluateUniqueness(Event event){
-        double difTotal = 0;
+        double minX, minY, maxX, maxY;
+        double centerX, centerY;
+        double weightedCenterX, weightedCenterY;
 
-        if(history.size() == LOC_SAMPLE_SIZE) {
-            for (Event mEvent : history) {
-                double dif = distanceDifference(event, mEvent);
+        //if history buffer full
+        if(history.size() == LOC_HISTORY_BUFFER) {
+            minX = getMinX();
+            minY = getMinY();
+            maxX = getMaxX();
+            maxY = getMaxY();
+            centerX = (maxX+minX)/2.0;
+            centerY = (maxY+minY)/2.0;
+            weightedCenterX = getWeightedCenterX();
+            weightedCenterY = getWeightedCenterY();
 
-                difTotal += (dif);
-                Log.d("dif", "" + dif);
+            Log.d("centerx",""+centerX);
+            Log.d("centery",""+centerY);
 
+            Log.d("weicenterx",""+weightedCenterX);
+            Log.d("weicentery",""+weightedCenterY);
+
+            //total dx or dy must be greater than MIN_TOTAL_CHANGE
+            Log.d("rms dx and dy","" + Math.sqrt((Math.pow(distanceDifferenceX(minX, maxX),2) + (Math.pow(distanceDifferenceY(minY, maxY),2)))));
+            Log.d("must be greater than","" + MIN_TOTAL_CHANGE);
+            if ((distanceDifferenceX(minX, maxX) + distanceDifferenceY(minY, maxY)) > MIN_TOTAL_CHANGE) {
+                //make sure outlier isn't the cause
+                Log.d("diff of centers","" + (distanceDifferenceX(centerX, weightedCenterX) +
+                        distanceDifferenceY(centerY, weightedCenterY)));
+                Log.d("must be less than","" + ALLOW_CENTER_DIFFERENCE);
+                if (((distanceDifferenceX(centerX, weightedCenterX) + distanceDifferenceY(centerY, weightedCenterY)) < ALLOW_CENTER_DIFFERENCE)) {
+                    //unique 5 enter middle point
+                    Event uniqueEvent = history.get((int)LOC_HISTORY_BUFFER/2);
+                    addEntry(uniqueEvent);
+                    Log.d("adding unique entry", "new event");
+                    staleChecks = 0;
+                }
             }
-            Log.d("diftotal", "" + difTotal);
-
-
-            if (difTotal >= 20) {
-                staleChecks = 0;
-            } else {
-                staleChecks++;
-            }
-
-            Log.d("stalechecks", "" + staleChecks);
-        }
-
-        history.add(event);
-        if(history.size() > URGENCY_HISTORY){
+            //toss first and add new point
             history.remove(0);
+            staleChecks++;
         }
+        history.add(event);
+    }
+
+    private double getMinX(){
+        double min = history.get(0).getLongitude();
+        for(int x = 1; x < history.size(); x++){
+            double new_min = history.get(x).getLongitude();
+            if(min > new_min){
+                min = new_min;
+            }
+        }
+        Log.d("minx",""+min);
+        return min;
+    }
+
+    private double getMinY(){
+        double min = history.get(0).getLatitude();
+        for(int x = 1; x < history.size(); x++){
+            double new_min = history.get(x).getLatitude();
+            if(min > new_min){
+                min = new_min;
+            }
+        }
+        Log.d("miny",""+min);
+        return min;
+    }
+
+    private double getMaxX(){
+        double max = history.get(0).getLongitude();
+        for(int x = 1; x < history.size(); x++){
+            double new_max = history.get(x).getLongitude();
+            if(max < new_max){
+                max = new_max;
+            }
+        }
+        Log.d("maxx",""+max);
+        return max;
+    }
+
+    private double getMaxY(){
+        double max = history.get(0).getLatitude();
+        for(int x = 1; x < history.size(); x++){
+            double new_max = history.get(x).getLatitude();
+            if(max < new_max){
+                max = new_max;
+            }
+        }
+        Log.d("maxy",""+max);
+        return max;
+    }
+
+    private double getWeightedCenterX(){
+        double WeightedCenterX = 0;
+        for(int x = 0; x < history.size(); x++){
+            WeightedCenterX += history.get(x).getLongitude();
+        }
+        WeightedCenterX = (WeightedCenterX / (double)history.size());
+        return WeightedCenterX;
+    }
+
+    private double getWeightedCenterY(){
+        double WeightedCenterY = 0;
+        for(int x = 0; x < history.size(); x++){
+            WeightedCenterY += history.get(x).getLatitude();
+        }
+        WeightedCenterY = (WeightedCenterY / (double)history.size());
+        return WeightedCenterY;
     }
 
     private void evaluateUrgency(){
@@ -291,14 +385,6 @@ public class TripDataRecorder extends Service implements LocationListener, Googl
         }
     }
 
-    public double distanceDifference(Event event1, Event event2) {
-        float[] results = new float[1];
-        Location.distanceBetween(event1.getLatitude(), event1.getLongitude(),
-                event2.getLatitude(), event2.getLongitude(), results);
-
-        return (double)results[0];
-    }
-
     private void updateRequestPriority(int urgency){
         Intent intent = new Intent("tunca.tom.ecofriendlyapp.RESTART_LOC_TRACKING");
         intent.putExtra("intervalFrequency", urgency);
@@ -311,5 +397,19 @@ public class TripDataRecorder extends Service implements LocationListener, Googl
         mAcceleration = 0.00f;
         mAccelerationCurrent = SensorManager.GRAVITY_EARTH;
         mAccelerationLast = SensorManager.GRAVITY_EARTH;
+    }
+
+    public double distanceDifferenceX(double x1, double x2) {
+        float[] results = new float[1];
+        Location.distanceBetween(0, x1, 0, x2, results);
+
+        return (double)results[0];
+    }
+
+    public double distanceDifferenceY(double y1, double y2) {
+        float[] results = new float[1];
+        Location.distanceBetween(y1, 0, y2, 0, results);
+
+        return (double)results[0];
     }
 }

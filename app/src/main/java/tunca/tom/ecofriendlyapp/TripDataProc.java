@@ -23,9 +23,8 @@ import org.json.JSONObject;
 
 public class TripDataProc implements AsyncResponse {
 
-    private static final int MIN_UNIQUE_DISTANCE = 10;
-    private static final int MAX_NON_UNIQUE_EVENTS = 15;
-    private static final int MIN_UNIQUE_EVENTS = 2;
+
+    private static final int MAX_IDLE_TIME = 300; //5 minutes
 
     public static AsyncResponse delegate = null;
 
@@ -142,57 +141,37 @@ public class TripDataProc implements AsyncResponse {
 
     private void findTrips(int startIndex){
         if(startIndex < history.size() - 1){
-            Event start = history.get(startIndex);
-            start = findTripStart(start);
+            Event start = findTripStart(startIndex);
             Event end = findTripEnd(start);
 
             TripSeg seg = new TripSeg(start,end);
             segments.add(seg);
 
-            findTrips(history.indexOf(end));
+            findTrips(history.indexOf(end) + 1);
         }
+
+        Log.d("trips found","" + segments.size());
     }
 
+    private Event findTripStart(int startIndex){
+        Event start = history.get(startIndex);
 
-    private Event findTripStart(Event start){
-        int uniqueEvents = 0;
-        Event temp = start;
-        int startIndex = history.indexOf(start);
-
+        startIndex++;
         for(int x = startIndex; x < history.size() - 1; x++){
-            if(distanceDifference(history.get(x+1), history.get(x)) > MIN_UNIQUE_DISTANCE){
-                if(uniqueEvents == 0){
-                    temp = history.get(x);
-                }
-                uniqueEvents++;
-            }else{
-                uniqueEvents = 0;
-            }
-            if(uniqueEvents > MIN_UNIQUE_EVENTS){
-                return temp;
+            TripSeg seg = new TripSeg(start, history.get(x));
+            if(seg.getDuration() < MAX_IDLE_TIME){
+                return history.get(x);
             }
         }
-        return start;
+        return history.get(history.size() - 1);
     }
-
 
     private Event findTripEnd(Event start){
-        Event temp = start;
-        int nonUniqueEvents = 0;
-        int startIndex = history.indexOf(start) + 1;
-
+        int startIndex = history.indexOf(start);
         for(int x = startIndex; x < history.size() - 1; x++){
-
-            if(distanceDifference(history.get(x+1), history.get(x)) < MIN_UNIQUE_DISTANCE){
-                if(nonUniqueEvents == 0){
-                    temp = history.get(x);
-                }
-                nonUniqueEvents++;
-            }else{
-                nonUniqueEvents = 0;
-            }
-            if(nonUniqueEvents > MAX_NON_UNIQUE_EVENTS){
-                return temp;
+            TripSeg seg = new TripSeg(start, history.get(x));
+            if(seg.getDuration() > MAX_IDLE_TIME){
+                return history.get(x);
             }
         }
         return history.get(history.size() - 1);
@@ -287,6 +266,7 @@ public class TripDataProc implements AsyncResponse {
 
                     getStream:
                     while (true) {
+                        Log.d("TripDataProc","getting estimate for trip" + params[2]);
                         Log.d("sleepTimer","" + sleepTimer);
                         try {
                             Thread.sleep(sleepTimer);
