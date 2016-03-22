@@ -162,6 +162,7 @@ public class TripDataProc implements AsyncResponse {
             if(seg.getDuration() < MAX_IDLE_TIME){
                 return history.get(x);
             }
+            start = history.get(x);
         }
         return history.get(history.size() - 1);
     }
@@ -173,6 +174,7 @@ public class TripDataProc implements AsyncResponse {
             if(seg.getDuration() > MAX_IDLE_TIME){
                 return history.get(x);
             }
+            start = history.get(x);
         }
         return history.get(history.size() - 1);
     }
