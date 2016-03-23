@@ -5,6 +5,7 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -32,6 +33,8 @@ public class MainActivity extends AppCompatActivity
     private FloatingActionButton fab;
     private MapHelper mMapHelper;
     private TripDataProc mTripDataProc;
+
+    private int loadingIndex = 0;
 
     public ArrayList<Trip> mCompletedTripsList = new ArrayList<>();
 
@@ -68,9 +71,18 @@ public class MainActivity extends AppCompatActivity
             navigationView.getMenu().getItem(0).setChecked(true);
             getSupportActionBar().setTitle(mTitle);
             startProgressFragment();
-            mTripDataProc = new TripDataProc(this);
-            mTripDataProc.loadHistory();
+
+            loadNext();
         }
+    }
+
+    private void loadNext(){
+        String[] dates = mTripDataProc.loadHistory();
+        if(loadingIndex < dates.length){
+            mTripDataProc = new TripDataProc(this);
+            mTripDataProc.loadData(dates[loadingIndex]);
+        }
+        loadingIndex++;
     }
 
     @Override
@@ -161,6 +173,10 @@ public class MainActivity extends AppCompatActivity
     }
 
     public void loadCompleteLists(ArrayList<Trip> list){
-        mCompletedTripsList = list;
+        for(int x = 0; x < list.size(); x++){
+            mCompletedTripsList.add(list.get(x));
+        }
+        Log.d("MainActivity","" + mCompletedTripsList.size());
+        loadNext();
     }
 }

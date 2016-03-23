@@ -65,7 +65,7 @@ public class TripDataProc implements AsyncResponse {
         mDatabase = mDatabaseHelper.getReadableDatabase();
     }
 
-    public ArrayList<Trip> loadHistory(){
+    public String[] loadHistory(){
         String[] dates;
 
         String[] columns = {"DATE"};
@@ -88,17 +88,13 @@ public class TripDataProc implements AsyncResponse {
         int index = 0;
 
         //go through cursor of returned values from query and add to array
-        for(c.moveToFirst();!c.isAfterLast(); c.moveToNext()){
+        for(c.moveToFirst(); !c.isAfterLast(); c.moveToNext()){
             dates[index] = c.getString(row);
             index++;
         }
         c.close();
 
-        for(String x : dates){
-            loadData(x);
-        }
-
-        return mTripList;
+        return dates;
     }
 
     public void loadData(String date){
@@ -198,14 +194,6 @@ public class TripDataProc implements AsyncResponse {
         drvEst.execute(url1, url2, String.valueOf(id), date); //runs the estimate determination //coordinate 1, coordinate2, id
     }
 
-    private double distanceDifference(Event event1, Event event2) {
-        float[] results = new float[1];
-        Location.distanceBetween(event1.getLatitude(), event1.getLongitude(),
-                event2.getLatitude(), event2.getLongitude(), results);
-
-        return (double)results[0];
-    }
-
     @Override
     public void onProcessFinish(String[] result) {
         TripSeg seg = segments.get(Integer.parseInt(result[4]));
@@ -241,10 +229,8 @@ public class TripDataProc implements AsyncResponse {
             Trip x = new Trip(result[5],walkingTotal,drivingTotal,transitTotal,bikingTotal); //create Trip (days date) and add to list
             mTripList.add(x);
 
-            if(mTripList.size() == daysRecorded){
                 //all the async tasks have finished and the arraylist is processed
                 ((MainActivity)c).loadCompleteLists(mTripList);
-            }
         }
     }
 
@@ -301,7 +287,6 @@ public class TripDataProc implements AsyncResponse {
             }
 
             return outputs;
-
         }
 
         private String getStreamOutput(InputStream stream){
