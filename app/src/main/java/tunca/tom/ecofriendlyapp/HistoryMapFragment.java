@@ -33,7 +33,6 @@ public class HistoryMapFragment extends SupportMapFragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        ((MainActivity)getActivity()).getNavigationView().getMenu().getItem(2).setChecked(true);
         View view = super.onCreateView(inflater, container, savedInstanceState);
         if (mCallback != null) {
             mCallback.onMapReady(getMap());
