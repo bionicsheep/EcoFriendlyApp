@@ -149,9 +149,6 @@ public class TripDataProc implements AsyncResponse {
         Log.d("trips found","" + segments.size());
     }
 
-    //since the dataRecorder does not allow for markers
-    //that are close or way too far, this checks to see
-    //if the start marker is set less than 5 mins away from second marker
     private Event findTripStart(int startIndex){
         Event start = history.get(startIndex);
 
@@ -165,8 +162,7 @@ public class TripDataProc implements AsyncResponse {
         }
         return history.get(history.size() - 1);
     }
-    //if there is a marker that is set more than 5
-    //mins after the last marker, the last marker is set as trip end
+
     private Event findTripEnd(Event start){
         int startIndex = history.indexOf(start);
         for(int x = startIndex; x < history.size() - 1; x++){
@@ -206,7 +202,6 @@ public class TripDataProc implements AsyncResponse {
         int dif = Math.abs(actualTimeDif - Integer.parseInt(result[0]));
         int lowest = 0;
 
-        //loop to figure out which means of transport
         for(int x = 1; x < result.length; x++){
             Log.d("size","" + x + " " + result.length);
             int tempDiff = Math.abs(actualTimeDif - Integer.parseInt(result[x]));
@@ -258,8 +253,6 @@ public class TripDataProc implements AsyncResponse {
                     int sleepTimer = 0;
 
                     getStream:
-
-                    //give time if google times out and try again after a couple of seconds
                     while (true) {
                         Log.d("TripDataProc","getting estimate for trip" + params[2]);
                         Log.d("sleepTimer","" + sleepTimer);
