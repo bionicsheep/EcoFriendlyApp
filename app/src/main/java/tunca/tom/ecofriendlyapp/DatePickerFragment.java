@@ -19,6 +19,7 @@ public class DatePickerFragment extends DialogFragment
     public interface OnDateSelectedListener {
         void setDate(String date);
     }
+
     @Override
     public void onAttach(Activity activity) {
         super.onAttach(activity);
