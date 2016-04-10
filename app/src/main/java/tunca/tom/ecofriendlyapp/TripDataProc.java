@@ -21,7 +21,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 public class TripDataProc implements AsyncResponse {
-    private static final int MAX_IDLE_TIME = 900; //15 minutes
+    private static final int MAX_IDLE_TIME = 300; //5 minutes
 
     public static AsyncResponse delegate = null;
 
