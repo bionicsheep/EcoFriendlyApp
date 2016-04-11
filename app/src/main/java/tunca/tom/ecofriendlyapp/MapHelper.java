@@ -46,8 +46,6 @@ public class MapHelper {
             return;
         }
 
-        mMap.clear();
-
         Cursor c = mDatabase.query(
                 LocationHistoryDatabase.TABLE_NAME,  // The table to query
                 projection,                               // The columns to return
@@ -63,7 +61,7 @@ public class MapHelper {
         int yRow = c.getColumnIndex(LocationHistoryDatabase.COL_4);
 
         ArrayList<Marker> markers = new ArrayList<>();
-        LatLng loc = new LatLng(38.9072,-77.0369);
+        LatLng loc = new LatLng(0, 0);
 
         if(c.getCount() == 0){
             return;

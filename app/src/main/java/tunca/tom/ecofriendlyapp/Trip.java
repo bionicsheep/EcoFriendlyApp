@@ -3,36 +3,38 @@ package tunca.tom.ecofriendlyapp;
 public class Trip {
 
     private String date;
-    private double walkdistance;
-    private double drivedistance;
-    private double transitdistance;
-    private double bikedistance;
+    private int walkdistance;
+    private int drivedistance;
+    private int transitdistance;
+    private int bikedistance;
 
-    public Trip(String date, double drivedistance, double walkdistance, double bikedistance, double transitdistance) {
+    public Trip(String date, int walkdistance, int drivedistance, int transitdistance, int bikedistance) {
         this.date = date;
-        this.drivedistance = drivedistance;
         this.walkdistance = walkdistance;
-        this.bikedistance = bikedistance;
+        this.drivedistance = drivedistance;
         this.transitdistance = transitdistance;
+        this.bikedistance = bikedistance;
     }
 
     public String getDate(){
         return this.date;
     }
 
-    public double getDriveDistance(){
-        return this.drivedistance;
-    }
-
-    public double getWalkDistance(){
+    public int getWalkDistance(){
         return this.walkdistance;
     }
 
-    public double getBikeDistance(){
+    public int getDriveDistance(){
+        return this.drivedistance;
+    }
+
+    public int getTransitDistance(){
+        return this.transitdistance;
+    }
+
+    public int getBikeDistance(){
         return this.bikedistance;
     }
 
-    public double getTransitDistance(){
-        return this.transitdistance;
-    }
+
 }
