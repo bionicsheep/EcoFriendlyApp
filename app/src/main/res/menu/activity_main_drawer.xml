@@ -7,7 +7,7 @@
         <item android:id="@+id/nav_progress" android:icon="@mipmap/ic_progress_black_24dp"
             android:title="Progress" />
         <item android:id="@+id/nav_history" android:icon="@mipmap/ic_history_black_24dp"
-            android:title="History" />
+            android:title="Emission's List" />
         <item android:id="@+id/nav_map_history" android:icon="@mipmap/ic_place_black_24dp"
             android:title="History" />
     </group>

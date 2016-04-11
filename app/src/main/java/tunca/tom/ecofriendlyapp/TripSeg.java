@@ -6,10 +6,12 @@ public class TripSeg {
 
     Event start;
     Event end;
+    int mode;
 
-    public TripSeg(Event start, Event end){
+    public TripSeg(Event start, Event end, int mode){
         this.start = start;
         this.end = end;
+        this.mode = mode;
     }
 
     public Event getStart(){
@@ -18,6 +20,10 @@ public class TripSeg {
 
     public Event getEnd(){
         return end;
+    }
+
+    public int getMode(){
+        return mode;
     }
 
     public int getDuration() {
