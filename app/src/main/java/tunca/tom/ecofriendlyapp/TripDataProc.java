@@ -197,7 +197,6 @@ public class TripDataProc implements AsyncResponse {
         }
 
         c.close();
-
         findTrips(0);
         checkTrips(date);
     }

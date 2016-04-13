@@ -37,7 +37,6 @@ public class CustomTripsAdapter extends ArrayAdapter<Trip>{
         TextView transitDistance = (TextView) convertView.findViewById(R.id.tripTransitTitle);
         TextView totalDistance = (TextView) convertView.findViewById(R.id.tripTotalTitle);
 
-
         myPreferences = PreferenceManager.getDefaultSharedPreferences(getContext());
         int emission = myPreferences.getInt("car_emission_value",592);
 
