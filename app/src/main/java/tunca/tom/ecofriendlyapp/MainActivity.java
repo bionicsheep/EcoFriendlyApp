@@ -101,8 +101,8 @@ public class MainActivity extends AppCompatActivity
             getSupportActionBar().setTitle(mTitle);
             startProgressFragment();
 
-            //dates = mTripDataProc.loadHistory(getDate());
-            //loadNext();
+            dates = mTripDataProc.loadHistory(getDate());
+            loadNext();
         }
     }
 
@@ -111,6 +111,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     public void loadNext(){
+        Log.d("MainActivity","if loading index: " + loadingIndex + " is less than dates.length: " + dates.length);
         if(loadingIndex < dates.length){
             mTripDataProc = new TripDataProc(this);
             mTripDataProc.loadData(dates[loadingIndex]);

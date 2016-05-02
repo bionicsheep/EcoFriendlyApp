@@ -243,6 +243,9 @@ public class TripDataProc implements AsyncResponse {
 
     private void checkTrips(String date){
         for(TripSeg s : segments){
+            Log.d("TripDataProc","start: " + s.getStart());
+            Log.d("TripDataProc","end: " + s.getEnd());
+            Log.d("TripDataProc","date: " + date);
             getTimeEstimate(s.getStart(), s.getEnd(), segments.indexOf(s), date);
         }
     }
