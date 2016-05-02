@@ -101,8 +101,8 @@ public class MainActivity extends AppCompatActivity
             getSupportActionBar().setTitle(mTitle);
             startProgressFragment();
 
-            dates = mTripDataProc.loadHistory(getDate());
-            loadNext();
+            //dates = mTripDataProc.loadHistory(getDate());
+            //loadNext();
         }
     }
 

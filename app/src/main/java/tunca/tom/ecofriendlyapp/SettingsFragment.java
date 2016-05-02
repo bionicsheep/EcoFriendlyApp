@@ -120,10 +120,31 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
                 String currentDBJournalPath = "/data/tunca.tom.ecofriendlyapp/databases/LocationData.db-journal";
                 String backupDBPath = "/EcoFriendlyApp/LocationData.db";
                 String backupDBJournalPath = "/EcoFriendlyApp/LocationData.db-journal";
+
+                String currentSegmentDBPath = "/data/tunca.tom.ecofriendlyapp/databases/SegmentData.db";
+                String currentSegmentDBJournalPath = "/data/tunca.tom.ecofriendlyapp/databases/SegmentData.db-journal";
+                String backupSegmentDBPath = "/EcoFriendlyApp/SegmentData.db";
+                String backupSegmentDBJournalPath = "/EcoFriendlyApp/SegmentData.db-journal";
+
+                String currentTripDBPath = "/data/tunca.tom.ecofriendlyapp/databases/TripData.db";
+                String currentTripDBJournalPath = "/data/tunca.tom.ecofriendlyapp/databases/TripData.db-journal";
+                String backupTripDBPath = "/EcoFriendlyApp/TripData.db";
+                String backupTripDBJournalPath = "/EcoFriendlyApp/TripData.db-journal";
+
                 File currentDB = new File(data, currentDBPath);
                 File backupDB = new File(sd, backupDBPath);
                 File currentDBJournal = new File(data, currentDBJournalPath);
                 File backupDBJournal = new File(sd, backupDBJournalPath);
+
+                File currentSegmentDB = new File(data, currentSegmentDBPath);
+                File backupSegmentDB = new File(sd, backupSegmentDBPath);
+                File currentSegmentDBJournal = new File(data, currentSegmentDBJournalPath);
+                File backupSegmentDBJournal = new File(sd, backupSegmentDBJournalPath);
+
+                File currentTripDB = new File(data, currentTripDBPath);
+                File backupTripDB = new File(sd, backupTripDBPath);
+                File currentTripDBJournal = new File(data, currentTripDBJournalPath);
+                File backupTripDBJournal = new File(sd, backupTripDBJournalPath);
 
                 if (currentDB.exists()) {
                     FileChannel src = new FileInputStream(currentDB).getChannel();
@@ -132,6 +153,21 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
                     src = new FileInputStream(currentDBJournal).getChannel();
                     dst = new FileOutputStream(backupDBJournal).getChannel();
                     dst.transferFrom(src, 0, src.size());
+
+                    src = new FileInputStream(currentSegmentDB).getChannel();
+                    dst = new FileOutputStream(backupSegmentDB).getChannel();
+                    dst.transferFrom(src, 0, src.size());
+                    src = new FileInputStream(currentSegmentDBJournal).getChannel();
+                    dst = new FileOutputStream(backupSegmentDBJournal).getChannel();
+                    dst.transferFrom(src, 0, src.size());
+
+                    src = new FileInputStream(currentTripDB).getChannel();
+                    dst = new FileOutputStream(backupTripDB).getChannel();
+                    dst.transferFrom(src, 0, src.size());
+                    src = new FileInputStream(currentTripDBJournal).getChannel();
+                    dst = new FileOutputStream(backupTripDBJournal).getChannel();
+                    dst.transferFrom(src, 0, src.size());
+
                     src.close();
                     dst.close();
                 }
