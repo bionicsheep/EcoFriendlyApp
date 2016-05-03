@@ -284,12 +284,12 @@ public class TripDataRecorder extends Service implements LocationListener, Googl
             //total dx or dy must be greater than MIN_TOTAL_CHANGE
             Log.d("rms dx and dy","" + Math.sqrt((Math.pow(distanceDifferenceX(minX, maxX),2) + (Math.pow(distanceDifferenceY(minY, maxY),2)))));
             Log.d("must be greater than","" + MIN_TOTAL_CHANGE);
-            if ((distanceDifferenceX(minX, maxX) + distanceDifferenceY(minY, maxY)) > MIN_TOTAL_CHANGE || true) {
+            if ((distanceDifferenceX(minX, maxX) + distanceDifferenceY(minY, maxY)) > MIN_TOTAL_CHANGE) {
                 //make sure outlier isn't the cause
                 Log.d("diff of centers","" + (distanceDifferenceX(centerX, weightedCenterX) +
                         distanceDifferenceY(centerY, weightedCenterY)));
                 Log.d("must be less than","" + ALLOW_CENTER_DIFFERENCE);
-                if (((distanceDifferenceX(centerX, weightedCenterX) + distanceDifferenceY(centerY, weightedCenterY)) < ALLOW_CENTER_DIFFERENCE) || true) {
+                if (((distanceDifferenceX(centerX, weightedCenterX) + distanceDifferenceY(centerY, weightedCenterY)) < ALLOW_CENTER_DIFFERENCE)) {
                     //unique 5 enter middle point
                     Event uniqueEvent = history.get((int)LOC_HISTORY_BUFFER/2);
                     addEntry(uniqueEvent);

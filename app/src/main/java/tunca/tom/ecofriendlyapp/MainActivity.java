@@ -18,6 +18,7 @@ import android.view.MenuItem;
 
 import com.google.android.gms.maps.GoogleMap;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 
 public class MainActivity extends AppCompatActivity
@@ -26,6 +27,9 @@ public class MainActivity extends AppCompatActivity
     public static final int WALKING_EMISSION = 0;
     public static final double TRANSIT_EMISSION = 1.725;
     public static final int BIKE_EMISSION = 0;
+
+    public ArrayList<Event> history = new ArrayList<>();
+    public ArrayList<TripSeg> segments = new ArrayList<>();
 
     private String mTitle = "Progress";
     private Fragment historyMapFragment;
