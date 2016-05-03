@@ -265,6 +265,7 @@ public class TripDataProc implements AsyncResponse {
 
     @Override
     public void onProcessFinish(String[] result) {
+        Log.d("TripDataProc","loading outputs " + result.length);
         TripSeg seg = segments.get(Integer.parseInt(result[4]));
 
         int actualTimeDif = seg.getDuration();
@@ -464,12 +465,7 @@ public class TripDataProc implements AsyncResponse {
                     int sleepTimer = 0;
 
                     getStream:
-
-
                     //give time if google times out and try again after a couple of seconds
-
-
-
                     {
                         while (true) {
                             Log.d("TripDataProc","getting estimate for trip" + params[2]);
@@ -501,9 +497,10 @@ public class TripDataProc implements AsyncResponse {
 
                 outputs[4] = params[2]; //id
                 outputs[5] = params[3]; //date
-
+                Log.d("TripDataProc","done loading outputs " + outputs.length);
             } catch (IOException e) {
-                //do nothing
+                Log.d("TripDatProc","MOTHERFUCKINGIOEXCEPTION");
+                e.printStackTrace();
             }
 
             return outputs;
