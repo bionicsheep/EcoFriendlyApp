@@ -164,6 +164,7 @@ public class TripDataProc implements AsyncResponse {
 
     public void loadData(String date){
         history.clear();
+        Log.d("TripDataProc","Loading segments here");
         segments.clear();
         drivingTotal = 0;
         walkingTotal = 0;
@@ -268,6 +269,8 @@ public class TripDataProc implements AsyncResponse {
     @Override
     public void onProcessFinish(String[] result) {
         Log.d("TripDataProc","loading outputs " + result.length);
+        Log.d("TripDataProc","segments size " + segments.size());
+
         TripSeg seg = segments.get(Integer.parseInt(result[4]));
 
         int actualTimeDif = seg.getDuration();
