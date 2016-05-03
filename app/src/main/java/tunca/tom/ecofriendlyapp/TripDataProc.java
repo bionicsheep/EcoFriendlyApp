@@ -246,6 +246,7 @@ public class TripDataProc implements AsyncResponse {
             Log.d("TripDataProc","start: " + s.getStart());
             Log.d("TripDataProc","end: " + s.getEnd());
             Log.d("TripDataProc","date: " + date);
+            Log.d("TripDataProc","segment index:" + segments.indexOf(s));
             getTimeEstimate(s.getStart(), s.getEnd(), segments.indexOf(s), date);
         }
     }
@@ -260,6 +261,7 @@ public class TripDataProc implements AsyncResponse {
         String url2 = lat2 + "," + long2;
 
         TimeEstimate drvEst = new TimeEstimate(); //async task object
+        Log.d("TripDataProc","id: " + id + " String.valueOf(id): " + String.valueOf(id));
         drvEst.execute(url1, url2, String.valueOf(id), date); //runs the estimate determination //coordinate 1, coordinate2, id
     }
 
@@ -495,6 +497,7 @@ public class TripDataProc implements AsyncResponse {
                     outputs[x] = getEstimate(outputs[x]);
                 }
 
+                Log.d("TripDataProc","params 2 id: " + params[2]);
                 outputs[4] = params[2]; //id
                 outputs[5] = params[3]; //date
                 Log.d("TripDataProc","done loading outputs " + outputs.length);
